@@ -27,10 +27,11 @@ def upgrade() -> None:
         sa.Column("transcription_status", sa.String, nullable=True),
         sa.Column("is_deleted", sa.Boolean, server_default="false", nullable=False),
     )
-    # Create an index on user_id (id is already indexed by primary key)
-    op.create_index("ix_voice_logs_user_id", "voice_logs", ["user_id"], unique=False)
+    # Use raw SQL to create the index only if it does not already exist.
+    op.execute('CREATE INDEX IF NOT EXISTS "ix_voice_logs_user_id" ON voice_logs ("user_id")')
 
 
 def downgrade() -> None:
-    op.drop_index("ix_voice_logs_user_id", table_name="voice_logs")
+    # Drop the index if it exists.
+    op.execute('DROP INDEX IF EXISTS "ix_voice_logs_user_id"')
     op.drop_table("voice_logs")
