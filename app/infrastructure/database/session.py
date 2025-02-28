@@ -1,50 +1,63 @@
 # File: app/infrastructure/database/session.py
-# Purpose: Configure SQLAlchemy database connection
-# Changes: Add support for Railway's SSL requirements and better error handling
+# Fix: Add better error handling and SSL support for Railway
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from app.config.settings import settings
+import os
 import sys
+from app.config.settings import settings
 
-# Debug: Print the database connection string when starting the app
+# Debug: Print all database-related environment variables
+print("=== DATABASE ENV VARS ===")
+for key in sorted(os.environ.keys()):
+    if any(db_term in key.lower() for db_term in ["postgres", "pg", "sql", "db"]):
+        # Mask passwords
+        value = os.environ[key]
+        if "password" in key.lower():
+            value = "********"
+        print(f"  {key}: {value}")
+print("========================")
+
+# Get database URL from settings
 DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI
-print(f"Connecting to database: {DATABASE_URL}")
+print(f"[SESSION] Using database URL: {DATABASE_URL}")
 
-# Check if we're connecting to Railway
-is_railway = "railway.internal" in DATABASE_URL or "rlwy.net" in DATABASE_URL
-print(f"Railway environment detected: {is_railway}")
+# Detect Railway from URL
+is_railway = any(domain in DATABASE_URL for domain in 
+                ["railway.internal", "rlwy.net", ".railway.app"])
+print(f"[SESSION] Railway environment detected: {is_railway}")
 
 try:
-    # Configure the SQLAlchemy engine with appropriate settings
-    engine = create_engine(
-        DATABASE_URL,
-        pool_pre_ping=True,
-        # Add SSL requirement for Railway PostgreSQL connections
-        connect_args={"sslmode": "require"} if is_railway else {}
-    )
+    # Configure engine with correct parameters
+    engine_args = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,  # Recycle connections every 5 minutes
+    }
     
-    # Test the connection immediately to catch issues early
+    # Add SSL for Railway connections
+    if is_railway:
+        engine_args["connect_args"] = {"sslmode": "require"}
+    
+    # Create engine with all parameters
+    engine = create_engine(DATABASE_URL, **engine_args)
+    
+    # Test connection immediately
     with engine.connect() as conn:
-        conn.execute("SELECT 1")
-        print("Database connection successful!")
+        result = conn.execute(text("SELECT 1")).scalar()
+        print(f"[SESSION] Database connection test result: {result}")
         
 except Exception as e:
-    print(f"ERROR - Database connection failed: {str(e)}")
-    print(f"Using connection string: {DATABASE_URL}")
-    print(f"Environment variables:")
-    print(f"  DATABASE_URL: {sys.environ.get('DATABASE_URL', 'Not set')}")
-    print(f"  SQLALCHEMY_DATABASE_URI: {sys.environ.get('SQLALCHEMY_DATABASE_URI', 'Not set')}")
-    # Don't raise here, let the application start and show proper error messages
+    error_msg = f"Database connection failed: {str(e)}"
+    print(f"[SESSION] ERROR: {error_msg}")
+    print(f"[SESSION] Connection string: {DATABASE_URL}")
+    
+    # Continue execution to allow application to start with proper error messages
 
-# Create the session factory
+# Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():
-    """
-    Creates a new SQLAlchemy SessionLocal that will be used in a single request,
-    and then closes it once the request is finished.
-    """
+    """Get database session for dependency injection."""
     db = SessionLocal()
     try:
         yield db

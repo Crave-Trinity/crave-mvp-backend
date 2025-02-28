@@ -1,30 +1,43 @@
 #!/bin/bash
 # File: entrypoint.sh
-# Purpose: Application startup script for Docker
-# Changes: Add debug information to track down environment variable issues
+# Fix: Add Railway-specific environment detection and variable dumping
 
 set -e
 
-# Debug environment variables to help troubleshoot database connections
-echo "==== DATABASE ENVIRONMENT VARIABLES ===="
-echo "DATABASE_URL: ${DATABASE_URL:-Not set}"
-echo "SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:-Not set}"
-echo "POSTGRES_URL: ${POSTGRES_URL:-Not set}"
-echo "==== END DATABASE ENVIRONMENT VARIABLES ===="
+# Dump ALL environment variables to see what Railway provides
+echo "==== RAILWAY ENVIRONMENT DETECTION ===="
+if [[ -n "$RAILWAY_SERVICE_NAME" || -n "$RAILWAY_ENVIRONMENT_NAME" ]]; then
+    echo "Railway detected! Service: ${RAILWAY_SERVICE_NAME:-unknown}, Environment: ${RAILWAY_ENVIRONMENT_NAME:-unknown}"
+fi
+
+echo "==== ALL DATABASE-RELATED ENVIRONMENT VARIABLES ===="
+env | grep -i -E 'sql|db|postgres|pg' | sort
+echo "=================================================="
+
+# Print important variables
+echo "PGUSER: ${PGUSER:-Not set}"
+echo "PGHOST: ${PGHOST:-Not set}"
+echo "PGDATABASE: ${PGDATABASE:-Not set}"
+echo "PGPASSWORD: ${PGPASSWORD:+**********}"
+echo "DATABASE_URL: ${DATABASE_URL:+**********}"
 
 # MIGRATION_MODE environment variable decides DB migration strategy
-# "upgrade" runs migrations fully, "stamp" marks DB as already migrated, "skip" does nothing
-MIGRATION_MODE=${MIGRATION_MODE:-stamp}
+# Default to "skip" in case database isn't ready yet
+MIGRATION_MODE=${MIGRATION_MODE:-skip}
 
 if [ "$MIGRATION_MODE" = "upgrade" ]; then
-  echo "Running Alembic migration (upgrade head)..."
-  alembic upgrade head || echo "Warning: Failed to run Alembic migrations."
+  echo "[Alembic] Running 'upgrade head'..."
+  alembic upgrade head || echo "Warning: Alembic upgrade failed, continuing anyway."
 elif [ "$MIGRATION_MODE" = "stamp" ]; then
-  echo "Stamping database schema as current (head)..."
-  alembic stamp head || echo "Warning: Failed to stamp database schema."
+  echo "[Alembic] Stamping the DB to 'head'..."
+  alembic stamp head || echo "Warning: Alembic stamp failed, continuing anyway."
 else
-  echo "Skipping database migrations (MIGRATION_MODE=$MIGRATION_MODE)."
+  echo "[Alembic] Skipping migrations entirely."
 fi
+
+# Add a short sleep to ensure migrations have time to complete
+echo "Waiting for database to be fully ready..."
+sleep 2
 
 echo "Starting FastAPI server..."
 exec uvicorn app.api.main:app --host 0.0.0.0 --port 8000

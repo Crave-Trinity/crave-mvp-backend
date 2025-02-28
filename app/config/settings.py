@@ -1,6 +1,5 @@
 # File: app/config/settings.py
-# Purpose: Application configuration using Pydantic
-# Changes: Add support for both Railway's DATABASE_URL and SQLALCHEMY_DATABASE_URI
+# Fix: Add robust Railway database URL detection
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -8,12 +7,7 @@ from typing import Dict
 import os
 
 class Settings(BaseSettings):
-    """
-    Central configuration for CRAVE Trinity Backend.
-    
-    Reads environment variables using Pydantic's BaseSettings. By default,
-    it also loads values from a `.env` file if present.
-    """
+    """Central configuration for CRAVE Trinity Backend."""
 
     # -----------------------------------------
     # Project / Environment
@@ -22,29 +16,72 @@ class Settings(BaseSettings):
     ENV: str = "development"
 
     # -----------------------------------------
-    # Database
+    # Database - Railway Support
     # -----------------------------------------
-    # Support both SQLALCHEMY_DATABASE_URI and DATABASE_URL for Railway compatibility
+    # Handle all possible Railway PostgreSQL environment variables
     SQLALCHEMY_DATABASE_URI: str = Field(
-        # First check DATABASE_URL (Railway standard), then SQLALCHEMY_DATABASE_URI, then default
-        default=os.environ.get("DATABASE_URL", 
-                os.environ.get("SQLALCHEMY_DATABASE_URI", 
-                    "postgresql://postgres:password@localhost:5432/crave_db")),
+        default=lambda: Settings._get_database_url(),
     )
+    
+    @staticmethod
+    def _get_database_url():
+        """Robust database URL detection for Railway and local development."""
+        # 1. Check complete connection strings first
+        if url := os.environ.get("DATABASE_URL"):
+            return url
+            
+        if url := os.environ.get("SQLALCHEMY_DATABASE_URI"):
+            return url
+            
+        if url := os.environ.get("POSTGRES_URL"):
+            return url
+        
+        # 2. Check for Railway-specific PostgreSQL components
+        if all(key in os.environ for key in ["PGUSER", "PGPASSWORD", "PGHOST"]):
+            user = os.environ.get("PGUSER")
+            password = os.environ.get("PGPASSWORD")
+            host = os.environ.get("PGHOST")
+            port = os.environ.get("PGPORT", "5432")
+            database = os.environ.get("PGDATABASE", "railway")
+            
+            # Form complete connection string
+            return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+            
+        # 3. Railway internal PostgreSQL format (newer versions)
+        if all(key in os.environ for key in ["PGPASSWORD"]):
+            # Railway default format uses internal hostname
+            return f"postgresql://postgres:{os.environ['PGPASSWORD']}@postgres.railway.internal:5432/railway"
+        
+        # 4. Default local development connection
+        return "postgresql://postgres:password@localhost:5432/crave_db"
 
-    # [Rest of the settings remain unchanged]
-    # ...
+    # [Rest of your settings remain unchanged]
+    PINECONE_API_KEY: str = Field(..., env="PINECONE_API_KEY")
+    PINECONE_ENV: str = Field("us-east-1-aws", env="PINECONE_ENV")
+    PINECONE_INDEX_NAME: str = Field("crave-embeddings", env="PINECONE_INDEX_NAME")
+    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
+    HUGGINGFACE_API_KEY: str = Field(..., env="HUGGINGFACE_API_KEY")
+    LLAMA2_MODEL_NAME: str = Field("meta-llama/Llama-2-13b-chat-hf", env="LLAMA2_MODEL_NAME")
+    LORA_PERSONAS: Dict[str, str] = {
+        "NighttimeBinger": "path_or_hub/nighttime-binger-lora",
+        "StressCraver": "path_or_hub/stress-craver-lora",
+    }
+    JWT_SECRET: str = Field(..., env="JWT_SECRET")
+    JWT_ALGORITHM: str = Field("HS256", env="JWT_ALGORITHM")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
 
     # -----------------------------------------
     # Pydantic Settings
     # -----------------------------------------
     model_config = SettingsConfigDict(
         env_file=".env",
-        env_file_encoding="utf-8"
+        env_file_encoding="utf-8",
+        case_sensitive=False  # Important for Railway env vars
     )
 
-# Create the singleton settings instance
+# Create settings instance
 settings = Settings()
 
-# Debug: Print the database URL for troubleshooting
-print(f"Using database URL: {settings.SQLALCHEMY_DATABASE_URI}")
+# Debug database URL for troubleshooting
+print(f"[SETTINGS] Database URL: {settings.SQLALCHEMY_DATABASE_URI}")
+print(f"[SETTINGS] Is Railway: {'railway.internal' in settings.SQLALCHEMY_DATABASE_URI or 'rlwy.net' in settings.SQLALCHEMY_DATABASE_URI}")

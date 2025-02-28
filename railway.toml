@@ -1,0 +1,31 @@
+# File: railway.toml
+# Purpose: Configure Railway deployment behavior
+
+[environments]
+  [environments.production]
+    # Always route through HTTPS
+    https_only = true
+
+  [environments.production.build]
+    # Build using Dockerfile
+    builder = "dockerfile"
+    # Optional: Notify on build failures
+    # buildCommand = "curl -s -X POST $WEBHOOK_URL -d 'Build $RAILWAY_SERVICE_NAME $RAILWAY_ENVIRONMENT_NAME $RAILWAY_GIT_COMMIT_SHA'"
+    
+  [environments.production.deploy]
+    # Deploy with these specific settings
+    startCommand = "./entrypoint.sh"
+    healthcheckPath = "/health"
+    healthcheckTimeout = 10
+    restartPolicyType = "on-failure"
+    restartPolicyMaxRetries = 5
+
+[deploy]
+  # General deployment settings
+  numReplicas = 1
+  healthcheckPath = "/health"
+  healthcheckTimeout = 10
+  restartPolicyType = "on-failure"
+  restartPolicyMaxRetries = 5
+
+# Remember to create a /health endpoint in your FastAPI app!
