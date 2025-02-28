@@ -1,20 +1,23 @@
 # File: app/container/Dockerfile
-# ------------------------------------------------------------------
-# Use a lightweight Python 3.11-slim base image
+
 FROM python:3.11-slim
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy requirements first for Docker layer caching
+# Install system dependencies (if needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install them
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire application code into the container
+# Copy the rest of the application code
 COPY . /app
 
-# Expose port 8000 (Railway will supply the actual PORT via env var)
 EXPOSE 8000
 
-# Use a custom entrypoint script to run migrations and start Uvicorn
-ENTRYPOINT ["./entrypoint.sh"]
+# Run the application on the port specified by the PORT env variable (default to 8000)
+CMD ["sh", "-c", "uvicorn app.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
