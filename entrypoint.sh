@@ -33,9 +33,6 @@ fi
 export SQLALCHEMY_DATABASE_URI=${DATABASE_URL:-$SQLALCHEMY_DATABASE_URI}
 echo "Using SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:0:25}..."
 
-# Skip migrations initially
-# alembic upgrade head
-
 # Start the web server
 uvicorn app.api.main:app --host 0.0.0.0 --port 8000
 

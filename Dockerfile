@@ -4,9 +4,12 @@ FROM python:3.11-slim
 # Set working directory to /app
 WORKDIR /app
 
-# Install system dependencies (build-essential & libpq-dev required for PostgreSQL)
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y build-essential libpq-dev && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        netcat && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first for better Docker caching
@@ -17,6 +20,6 @@ RUN pip install -r requirements.txt
 # Copy all project files to the container
 COPY . /app
 
-# Set entrypoint permissions and run the entrypoint script (migration + FastAPI launch)
+# Set entrypoint permissions and run the entrypoint script
 RUN chmod +x entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
