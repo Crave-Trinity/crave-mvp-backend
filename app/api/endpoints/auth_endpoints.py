@@ -11,7 +11,7 @@ from app.api.dependencies import (
     get_current_user
 )
 from app.infrastructure.database.models import UserModel
-from app.infrastructure.auth import (
+from app.infrastructure.auth.jwt_handler import (  # CORRECTED IMPORT
     authenticate_user,
     create_access_token,
     verify_password,
