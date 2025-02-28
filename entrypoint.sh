@@ -35,7 +35,7 @@ export SQLALCHEMY_DATABASE_URI=${DATABASE_URL:-$SQLALCHEMY_DATABASE_URI}
 echo "Using SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:0:25}..."
 
 # Start uvicorn. Notice we're directly referencing the "main" app from app/api/main.py
-uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
 
 # Kill the background health check
 kill $HEALTH_PID

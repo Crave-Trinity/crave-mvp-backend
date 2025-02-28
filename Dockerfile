@@ -1,29 +1,20 @@
-# Dockerfile
-
-# Use Python 3.11-slim as the base
+# File: app/container/Dockerfile
+# ------------------------------------------------------------------
+# Use a lightweight Python 3.11-slim base image
 FROM python:3.11-slim
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies in a single RUN to keep layers small
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        libpq-dev \
-        netcat-openbsd && \
-    rm -rf /var/lib/apt/lists/*
+# Copy requirements first for Docker layer caching
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy requirements first for Docker caching
-COPY requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
-
-# Now copy the entire project
+# Copy the entire application code into the container
 COPY . /app
 
-# Make sure our entry script is executable
-RUN chmod +x /app/entrypoint.sh
+# Expose port 8000 (Railway will supply the actual PORT via env var)
+EXPOSE 8000
 
-# Use the entrypoint script, which will start our server + health check
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Use a custom entrypoint script to run migrations and start Uvicorn
+ENTRYPOINT ["./entrypoint.sh"]

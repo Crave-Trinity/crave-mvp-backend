@@ -3,11 +3,17 @@ app/api/main.py
 
 Defines the FastAPI instance and includes routers for all endpoints.
 """
+"""
+File: app/api/main.py
+---------------------
+This module defines the FastAPI application instance and includes all endpoint routers.
+A health check endpoint (/health) is defined for Railway's monitoring.
+"""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config.settings import get_settings
+# Import your routers. Adjust these imports to match your project structure.
 from app.api.endpoints import (
     health,
     auth_endpoints,
@@ -22,31 +28,23 @@ from app.api.endpoints import (
     voice_logs_enhancement,
 )
 
+# Create the FastAPI application instance
 app = FastAPI(
     title="CRAVE Trinity Backend",
     description="A modular, AI-powered backend for craving analytics",
     version="0.1.0",
 )
 
-# Add CORS middleware (be sure to lock this down in production)
+# Configure CORS middleware (lock this down for production as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Consider restricting origins in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-@app.on_event("startup")
-async def startup_event():
-    """
-    Initialize settings on startup (read environment variables, etc.).
-    """
-    get_settings()  # calling get_settings() ensures env variables are loaded
-
-
-# Include routers from all endpoints
+# Include routers from various endpoints
 app.include_router(health.router, prefix="/api/health")
 app.include_router(auth_endpoints.router, prefix="/api/auth")
 app.include_router(craving_logs.router, prefix="/api/cravings")
@@ -59,20 +57,16 @@ app.include_router(user_queries.router, prefix="/api/cravings/user")
 app.include_router(voice_logs_endpoints.router, prefix="/api/voice-logs")
 app.include_router(voice_logs_enhancement.router, prefix="/api/voice-logs")
 
-
+# Root endpoint (for quick info)
 @app.get("/")
 async def root():
-    """Root endpoint."""
     return {
         "service": "CRAVE Trinity Backend",
         "status": "running",
         "docs": "/docs"
     }
 
-
+# Health check endpoint for Railway and other monitoring
 @app.get("/health")
-async def railway_health():
-    """
-    Health check endpoint (Railway expects /health by default).
-    """
+async def health():
     return {"status": "ok", "service": "CRAVE Trinity Backend"}
