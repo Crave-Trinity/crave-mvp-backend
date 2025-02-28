@@ -131,17 +131,8 @@ class UserRepository:
         """Updates a user."""
         self.db.commit()
         self.db.refresh(user)
-    
-    def authenticate_user(self, username:str, password:str) -> Optional[UserModel]:
-        user = self.get_by_username(username)
-        if not user:
-            user = self.get_by_email(username)
-            if not user:
-                return None
-        from app.infrastructure.auth.jwt_handler import verify_password
-        if not verify_password(password, user.password_hash):
-            return None
-        return user
+
+
 
 class VoiceLogRepository:
     """Repository for VoiceLogModel."""

@@ -7,14 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import (
     get_db,
-    get_user_repository,  # We'll get the repository, then use *its* method
+    get_user_repository,
     get_current_user
 )
 from app.infrastructure.database.models import UserModel
 from app.infrastructure.auth.jwt_handler import (
     create_access_token,
-    verify_password, # Removed authenticate_user.
+    # verify_password,  # REMOVED FROM HERE
 )
+from app.infrastructure.auth.password_hasher import verify_password  # ADDED IMPORT HERE
 from app.schemas.auth_schemas import (
     Token,
     UserCreate,
@@ -33,27 +34,35 @@ router = APIRouter()
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db),
-    user_repo = Depends(get_user_repository) # Get the user repo
+    user_repo = Depends(get_user_repository)
 ):
     """
     Endpoint to authenticate a user and return an access token.
     """
-    # Use the repository's authenticate_user method!
-    user = user_repo.authenticate_user(form_data.username, form_data.password)
+    # Use the repository to get the user, THEN verify password
+    user = user_repo.get_by_username(form_data.username)
     if not user:
+        user = user_repo.get_by_email(form_data.username)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    if not verify_password(form_data.password, user.password_hash):  # Verify password
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     access_token_expires = get_settings().JWT_ACCESS_TOKEN_EXPIRE_MINUTES
     access_token = create_access_token(
         data={"sub": user.username or user.email},  # Use username, fallback to email
         expires_delta=access_token_expires,
     )
     return {"access_token": access_token, "token_type": "bearer"}
-
-
 @router.post("/register", response_model=UserResponse)
 def register_user(
     user: UserCreate,
