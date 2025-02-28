@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict
 from app.core.use_cases.generate_craving_insights import generate_insights
 from app.core.services.analytics_service import analyze_patterns, list_personas
 from app.core.services.rag_service import rag_service
-from app.infrastructure.llm.lora_adapter import LoRAAdapterManager
 from app.api.dependencies import get_current_user
 from app.infrastructure.database.models import UserModel
 
@@ -65,16 +64,12 @@ async def ai_patterns(user_id: int):
 @router.get("/ai/personas", tags=["AI"], response_model=PersonasResponse)
 async def ai_personas():
     """
-    List available craving personas (LoRA fine-tuned).
+    List available craving personas.
     Final URL: GET /api/ai/personas
     """
     try:
-        # Attempt to get actual available personas from LoRA
-        try:
-            personas = LoRAAdapterManager.list_available_personas()
-        except:
-            personas = list_personas()
-            
+        # Now we just return the dummy list from analytics_service
+        personas = list_personas()
         return {"personas": personas}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Personas retrieval error: {exc}")
