@@ -1,8 +1,9 @@
-# app/config/settings.py
+# File: app/config/settings.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Dict, Optional
 import os
+
 
 class Settings(BaseSettings):
     """Central configuration for CRAVE Trinity Backend."""
@@ -22,8 +23,8 @@ class Settings(BaseSettings):
     def _get_database_url() -> str:
         """Robust database URL detection for Railway and local development."""
         url: Optional[str] = os.environ.get("DATABASE_URL") or \
-               os.environ.get("SQLALCHEMY_DATABASE_URI") or \
-               os.environ.get("POSTGRES_URL")
+            os.environ.get("SQLALCHEMY_DATABASE_URI") or \
+            os.environ.get("POSTGRES_URL")
         if url:
             return url
 
@@ -63,11 +64,16 @@ class Settings(BaseSettings):
 
 _settings = None  # Global variable to hold the settings instance
 
+
 def get_settings():
     """
-    Get the settings instance.  Creates it if it doesn't exist yet.
+    Get the settings instance. Creates it if it doesn't exist yet.
     """
     global _settings
     if _settings is None:
         _settings = Settings()
     return _settings
+
+
+# Create a global instance for convenience.
+settings = get_settings()
