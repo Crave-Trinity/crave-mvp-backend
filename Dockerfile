@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libpq-dev \
-        netcat && \
+        netcat-openbsd && \  # Install netcat-openbsd specifically
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first for better Docker caching
