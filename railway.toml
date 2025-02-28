@@ -17,15 +17,11 @@
     startCommand = "./entrypoint.sh"
     healthcheckPath = "/health"
     healthcheckTimeout = 10
-    restartPolicyType = "on-failure"
-    restartPolicyMaxRetries = 5
 
 [deploy]
   # General deployment settings
   numReplicas = 1
   healthcheckPath = "/health"
   healthcheckTimeout = 10
-  restartPolicyType = "on-failure"
-  restartPolicyMaxRetries = 5
 
 # Remember to create a /health endpoint in your FastAPI app!
