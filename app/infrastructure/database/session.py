@@ -1,4 +1,5 @@
-# app/infrastructure/database/session.py
+# File: app/infrastructure/database/session.py
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import os
@@ -24,13 +25,17 @@ def get_engine():
     print(f"[SESSION] Using database URL: {DATABASE_URL}")
 
     # Detect Railway from URL
-    is_railway = "railway.app" in DATABASE_URL or ".railway.internal" in DATABASE_URL or "railway." in DATABASE_URL
+    is_railway = (
+        "railway.app" in DATABASE_URL 
+        or ".railway.internal" in DATABASE_URL 
+        or "railway." in DATABASE_URL
+    )
 
     try:
         # Configure engine with correct parameters
         engine_args = {
-            "pool_pre_ping": True,  # Enable connection health checks
-            "pool_recycle": 300,  # Recycle connections every 5 minutes
+            "pool_pre_ping": True,   # Enable connection health checks
+            "pool_recycle": 300,     # Recycle connections every 5 minutes
         }
 
         # Add SSL for Railway connections - THIS IS CRUCIAL
@@ -45,9 +50,14 @@ def get_engine():
         error_msg = f"Database connection failed: {str(e)}"
         print(f"[SESSION] ERROR: {error_msg}")
         print(f"[SESSION] Connection string: {DATABASE_URL}")
-        # Instead of continuing, raise the exception to halt startup
-        raise  # Re-raise the exception
+        # Raise the exception to halt startup
+        raise
 
 engine = get_engine()
-# Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False
+
+# Create session factory (FIX: Added missing parenthesis and bind=engine)
+SessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine
+)
