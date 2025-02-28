@@ -1,7 +1,7 @@
 # app/api/main.py
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config.settings import get_settings, Settings # Import get_settings
+from app.config.settings import get_settings  # Import get_settings
 
 
 # Import all your endpoint routers
