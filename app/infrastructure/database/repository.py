@@ -1,92 +1,186 @@
-from typing import Optional
+# app/infrastructure/database/repository.py
+"""
+Data access layer using SQLAlchemy, providing repository classes for each model.
+"""
 from sqlalchemy.orm import Session
-from app.infrastructure.database.models import CravingLogModel, UserModel, VoiceLogModel
-from app.infrastructure.auth.jwt_handler import verify_password
+from sqlalchemy import func
+from app.infrastructure.database.models import CravingModel, UserModel, VoiceLogModel  # Corrected import
+from typing import List, Optional
+
 
 class CravingRepository:
+    """Repository for CravingModel."""
+
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, craving_log_data: dict) -> CravingLogModel:
-        db_craving_log = CravingLogModel(**craving_log_data)
-        self.db.add(db_craving_log)
-        self.db.commit()
-        self.db.refresh(db_craving_log)
-        return db_craving_log
-
-    def get_by_id(self, craving_log_id: int) -> Optional[CravingLogModel]:
+    def get_craving_by_id(self, craving_id: int) -> Optional[CravingModel]:
+        """Retrieves a craving by its ID."""
         return (
-            self.db.query(CravingLogModel)
-            .filter(CravingLogModel.id == craving_log_id)
+            self.db.query(CravingModel)
+            .filter(CravingModel.id == craving_id)
             .first()
         )
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> list[CravingLogModel]:
-        return self.db.query(CravingLogModel).offset(skip).limit(limit).all()
+    def get_cravings_for_user(
+        self, 
+        user_id: int, 
+        skip: int = 0, 
+        limit: int = 100
+    ) -> List[CravingModel]:
+        """
+        Retrieves all cravings for a given user, excluding deleted ones,
+        and applies pagination with skip/limit.
+        """
+        return (
+            self.db.query(CravingModel)
+            .filter(CravingModel.user_id == user_id, CravingModel.is_deleted == False)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
-    def get_by_user_id(self, user_id: int) -> list[CravingLogModel]:
-         return self.db.query(CravingLogModel).filter(CravingLogModel.user_id == user_id).all()
+    def count_cravings_for_user(self, user_id: int) -> int:
+        """Counts all non-deleted cravings for a given user."""
+        return (
+            self.db.query(func.count(CravingModel.id))
+            .filter(CravingModel.user_id == user_id, CravingModel.is_deleted == False)
+            .scalar()
+        )
 
-    # Add other CRUD methods as needed (update, delete, etc.)
+    def create_craving(self, user_id: int, description: str, intensity: int) -> CravingModel:
+        """Creates a new craving."""
+        db_craving = CravingModel(
+            user_id=user_id, 
+            description=description, 
+            intensity=intensity
+        )
+        self.db.add(db_craving)
+        self.db.commit()
+        self.db.refresh(db_craving)
+        return db_craving
+
+    def delete_craving(self, craving_id: int):
+        """Marks a craving as deleted (soft delete)."""
+        db_craving = (
+            self.db.query(CravingModel)
+            .filter(CravingModel.id == craving_id)
+            .first()
+        )
+        if db_craving:
+            db_craving.is_deleted = True
+            self.db.commit()
+            self.db.refresh(db_craving)
+
+    def search_cravings(self, user_id: int, query_text: str) -> List[CravingModel]:
+        """
+        Performs a simple text search on the description column, for the given user,
+        ignoring deleted cravings.
+        """
+        return (
+            self.db.query(CravingModel)
+            .filter(
+                CravingModel.user_id == user_id,
+                CravingModel.is_deleted == False,
+                CravingModel.description.ilike(f"%{query_text}%")
+            )
+            .all()
+        )
 
 
 class UserRepository:
+    """Repository for UserModel."""
+
     def __init__(self, db: Session):
         self.db = db
 
-    def create_user(self, email: str, username: Optional[str], password_hash: str) -> UserModel:
-        db_user = UserModel(email=email, username=username, password_hash=password_hash)
+    def get_by_username(self, username: str) -> Optional[UserModel]:
+        """Retrieves a user by their username."""
+        return self.db.query(UserModel).filter(UserModel.username == username).first()
+
+    def get_by_email(self, email: str) -> Optional[UserModel]:
+        """Retrieves a user by their email address."""
+        return self.db.query(UserModel).filter(UserModel.email == email).first()
+    
+    def get_by_id(self, user_id: int) -> Optional[UserModel]:
+        """Retrieves a user by their id"""
+        return self.db.query(UserModel).filter(UserModel.id == user_id).first()
+
+    def create_user(
+        self,
+        email: str,
+        password_hash: str,
+        username: str = None,
+        display_name: str | None = None,
+        avatar_url: str | None = None,
+    ) -> UserModel:
+        """Creates a new user."""
+        db_user = UserModel(
+            email=email,
+            password_hash=password_hash,
+            username=username,
+            display_name=display_name,
+            avatar_url=avatar_url,
+        )
         self.db.add(db_user)
         self.db.commit()
         self.db.refresh(db_user)
         return db_user
-
-    def get_by_email(self, email: str) -> Optional[UserModel]:
-        return self.db.query(UserModel).filter(UserModel.email == email).first()
-
-    def get_by_username(self, username: str) -> Optional[UserModel]:
-        return self.db.query(UserModel).filter(UserModel.username == username).first()
-
-    def get_by_id(self, user_id: int) -> Optional[UserModel]:
-        return self.db.query(UserModel).filter(UserModel.id == user_id).first()
-
+    
     def update_user(self, user: UserModel) -> None:
+        """Updates a user."""
         self.db.commit()
         self.db.refresh(user)
-
-    def authenticate_user(self, username: str, password: str) -> Optional[UserModel]:
-        """Authenticates a user by username/email and password."""
+    
+    def authenticate_user(self, username:str, password:str) -> Optional[UserModel]:
         user = self.get_by_username(username)
         if not user:
-          user = self.get_by_email(username)
-          if not user:
-            return None
+            user = self.get_by_email(username)
+            if not user:
+                return None
+        from app.infrastructure.auth.jwt_handler import verify_password
         if not verify_password(password, user.password_hash):
             return None
         return user
 
-
 class VoiceLogRepository:
+    """Repository for VoiceLogModel."""
+
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, voice_log_data: dict) -> VoiceLogModel:
-        db_voice_log = VoiceLogModel(**voice_log_data)
+    def create_voice_log(self, user_id: int, file_path: str) -> VoiceLogModel:
+        """Creates a new voice log."""
+        db_voice_log = VoiceLogModel(user_id=user_id, file_path=file_path)
         self.db.add(db_voice_log)
         self.db.commit()
         self.db.refresh(db_voice_log)
         return db_voice_log
 
-    def get_by_id(self, voice_log_id: int) -> Optional[VoiceLogModel]:
+    def get_voice_log_by_id(self, voice_log_id: int) -> Optional[VoiceLogModel]:
+        """Retrieves a voice log by its ID."""
         return (
             self.db.query(VoiceLogModel)
             .filter(VoiceLogModel.id == voice_log_id)
             .first()
         )
-    def get_all(self, skip: int = 0, limit: int = 100) -> list[VoiceLogModel]:
-        return self.db.query(VoiceLogModel).offset(skip).limit(limit).all()
 
-    def get_by_user_id(self, user_id: int) -> list[VoiceLogModel]:
-         return self.db.query(VoiceLogModel).filter(VoiceLogModel.user_id == user_id).all()
+    def get_voice_logs_by_user(self, user_id: int) -> List[VoiceLogModel]:
+        """Retrieves all voice logs for a given user, excluding deleted ones."""
+        return (
+            self.db.query(VoiceLogModel)
+            .filter(VoiceLogModel.user_id == user_id, VoiceLogModel.is_deleted == False)
+            .all()
+        )
 
-    # Add other CRUD methods as needed (update, delete, etc.)
+    def update_voice_log_transcription(
+        self, voice_log_id: int, transcribed_text: str, transcription_status: str
+    ) -> VoiceLogModel:
+        """Updates the transcription of a voice log."""
+        voice_log = self.get_voice_log_by_id(voice_log_id)
+        if voice_log:
+            voice_log.transcribed_text = transcribed_text
+            voice_log.transcription_status = transcription_status
+            self.db.commit()
+            self.db.refresh(voice_log)
+        return voice_log
