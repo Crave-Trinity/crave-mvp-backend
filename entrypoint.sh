@@ -51,6 +51,12 @@ export SQLALCHEMY_DATABASE_URI=${DATABASE_URL:-$SQLALCHEMY_DATABASE_URI}
 echo "Using SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:0:25}..."
 
 # ------------------------------------------------------------------------------
+# Run Alembic migrations to ensure the database schema is up-to-date.
+# ------------------------------------------------------------------------------
+echo "Running Alembic migrations..."
+alembic upgrade head
+
+# ------------------------------------------------------------------------------
 # Launch the main application using uvicorn.
 # Railway provides $PORT; if not set, default to 8000.
 # ------------------------------------------------------------------------------
