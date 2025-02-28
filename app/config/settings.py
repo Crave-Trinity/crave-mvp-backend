@@ -1,7 +1,8 @@
 # File: app/config/settings.py
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from typing import Dict, Optional
+from typing import Optional
 import os
 
 
@@ -38,19 +39,17 @@ class Settings(BaseSettings):
 
         return "postgresql://postgres:password@localhost:5432/crave_db"
 
+    # -----------------------------------------
     # API Keys - NO DEFAULTS
+    # -----------------------------------------
     PINECONE_API_KEY: str = Field(...)
     PINECONE_ENV: str = Field(default="us-east-1-aws")
     PINECONE_INDEX_NAME: str = Field(default="crave-embeddings")
     OPENAI_API_KEY: str = Field(...)
-    HUGGINGFACE_API_KEY: str = Field(...)
 
-    # Other Settings
-    LLAMA2_MODEL_NAME: str = Field(default="meta-llama/Llama-2-13b-chat-hf")
-    LORA_PERSONAS: Dict[str, str] = {
-        "NighttimeBinger": "path_or_hub/nighttime-binger-lora",
-        "StressCraver": "path_or_hub/stress-craver-lora",
-    }
+    # -----------------------------------------
+    # Authentication & Misc
+    # -----------------------------------------
     JWT_SECRET: str = Field(...)
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60)

@@ -5,6 +5,7 @@
 #   - JWT creation and decoding
 #   - Retrieving current user from token with FastAPI dependencies
 # =============================================================================
+# File: app/infrastructure/auth/auth_service.py
 
 from datetime import datetime, timedelta
 import jwt
@@ -12,14 +13,14 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-# Load settings from the single source
-from app.config.settings import Settings
+from app.config.settings import get_settings  # <-- Use get_settings for a single shared instance
 from app.infrastructure.database.session import get_db
 from app.infrastructure.database.models import UserModel
 
-settings = Settings()
+settings = get_settings()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
 
 class AuthService:
     """
