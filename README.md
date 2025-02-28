@@ -1,3 +1,82 @@
+# Railway Deployment Guide for CRAVE Backend
+
+This guide explains how to deploy the CRAVE Backend to Railway successfully.
+
+## Prerequisites
+
+- A Railway account
+- Access to the CRAVE Backend repository
+- Required API keys: OpenAI, Pinecone, HuggingFace
+
+## Deployment Steps
+
+### 1. Create a New Project in Railway
+
+- Go to [Railway](https://railway.app/)
+- Click "New Project"
+- Select "Deploy from GitHub repo"
+- Connect and select the CRAVE Backend repository
+
+### 2. Add a PostgreSQL Database
+
+- In your project, click "New"
+- Choose "Database" → "PostgreSQL"
+- Railway will automatically provision a PostgreSQL database
+
+### 3. Configure Environment Variables
+
+Add the following environment variables to your Railway project:
+
+**Required Variables:**
+- `JWT_SECRET` - A secure random string for JWT authentication
+- `OPENAI_API_KEY` - Your OpenAI API key
+- `PINECONE_API_KEY` - Your Pinecone API key
+- `HUGGINGFACE_API_KEY` - Your Hugging Face API key
+
+**Optional Variables:**
+- `MIGRATION_MODE` - Set to `upgrade` for the first deployment, then `stamp` for subsequent deployments
+- `LLAMA2_MODEL_NAME` - Override the default Llama model if needed
+- `PINECONE_ENV` - Override the default Pinecone environment if needed
+- `PINECONE_INDEX_NAME` - Override the default Pinecone index name if needed
+
+**Important Note:** 
+Do NOT manually set `DATABASE_URL` or `SQLALCHEMY_DATABASE_URI`. Railway automatically provides these for your PostgreSQL instance.
+
+### 4. Deploy Your Application
+
+- Click "Deploy" in your Railway dashboard
+- Railway will build and deploy your application using the Dockerfile
+
+### 5. Verify Deployment
+
+- Once deployed, click on the generated domain URL to access your API
+- Check the logs for any errors related to database connection or migrations
+- Try accessing the `/health` endpoint to verify the API is running
+
+## Troubleshooting Database Connection Issues
+
+If you encounter database connection errors:
+
+1. **Check the logs** for messages about database connection failures
+2. **Verify environment variables** in the Railway dashboard
+3. **Restart the deployment** to refresh environment variables
+4. **Check if your application is trying to use localhost** instead of the Railway database URL
+
+## Update Strategy
+
+When pushing updates to your application:
+
+1. Set `MIGRATION_MODE` to `upgrade` if you've added new database migrations
+2. Push your changes to GitHub
+3. Railway will automatically detect changes and redeploy your application
+
+## Recommended Railway Settings
+
+- **Autoscaling**: Start with 1 instance and let Railway handle scaling
+- **Memory**: 512MB minimum
+- **Build Command**: Railway uses your Dockerfile automatically
+- **Start Command**: `./entrypoint.sh` (already set in your Dockerfile)
+
 # 🌊 CRAVE WAVE (Trinity Backend): Vertical AI Optimization for Craving Intelligence
 
 ## 🌟 Overview  

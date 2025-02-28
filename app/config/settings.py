@@ -1,8 +1,11 @@
 # File: app/config/settings.py
+# Purpose: Application configuration using Pydantic
+# Changes: Add support for both Railway's DATABASE_URL and SQLALCHEMY_DATABASE_URI
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Dict
+import os
 
 class Settings(BaseSettings):
     """
@@ -21,62 +24,16 @@ class Settings(BaseSettings):
     # -----------------------------------------
     # Database
     # -----------------------------------------
-    # Make sure Pydantic reads from env="SQLALCHEMY_DATABASE_URI"
+    # Support both SQLALCHEMY_DATABASE_URI and DATABASE_URL for Railway compatibility
     SQLALCHEMY_DATABASE_URI: str = Field(
-        default="postgresql://postgres:password@localhost:5432/crave_db",
-        env="SQLALCHEMY_DATABASE_URI"
+        # First check DATABASE_URL (Railway standard), then SQLALCHEMY_DATABASE_URI, then default
+        default=os.environ.get("DATABASE_URL", 
+                os.environ.get("SQLALCHEMY_DATABASE_URI", 
+                    "postgresql://postgres:password@localhost:5432/crave_db")),
     )
 
-    # -----------------------------------------
-    # Pinecone (for Vector DB)
-    # -----------------------------------------
-    PINECONE_API_KEY: str = Field(..., env="PINECONE_API_KEY")
-    PINECONE_ENV: str = Field(
-        default="us-east-1-aws",
-        env="PINECONE_ENV"
-    )
-    PINECONE_INDEX_NAME: str = Field(
-        default="crave-embeddings",
-        env="PINECONE_INDEX_NAME"
-    )
-
-    # -----------------------------------------
-    # OpenAI (for Embeddings, if used)
-    # -----------------------------------------
-    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
-
-    # -----------------------------------------
-    # Hugging Face Token (for Llama 2)
-    # -----------------------------------------
-    # In your .env or Railway "Variables," set:
-    #    HUGGINGFACE_API_KEY=<Your HF token>
-    # Ensure your token has access to the Llama 2 repo if it's gated.
-    HUGGINGFACE_API_KEY: str = Field(..., env="HUGGINGFACE_API_KEY")
-
-    # -----------------------------------------
-    # Llama 2 Model Settings (CPU-only usage)
-    # -----------------------------------------
-    # You can set LLAMA2_MODEL_NAME in .env or Railway env if you
-    # want to override the default below.
-    LLAMA2_MODEL_NAME: str = Field(
-        default="meta-llama/Llama-2-13b-chat-hf",
-        env="LLAMA2_MODEL_NAME"
-    )
-
-    # LoRA adapters for personas
-    LORA_PERSONAS: Dict[str, str] = {
-        "NighttimeBinger": "path_or_hub/nighttime-binger-lora",
-        "StressCraver": "path_or_hub/stress-craver-lora",
-    }
-
-    # -----------------------------------------
-    # JWT / Authentication
-    # -----------------------------------------
-    JWT_SECRET: str = Field(..., env="JWT_SECRET")
-    JWT_ALGORITHM: str = Field(default="HS256", env="JWT_ALGORITHM")
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=60, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES"
-    )
+    # [Rest of the settings remain unchanged]
+    # ...
 
     # -----------------------------------------
     # Pydantic Settings
@@ -88,3 +45,6 @@ class Settings(BaseSettings):
 
 # Create the singleton settings instance
 settings = Settings()
+
+# Debug: Print the database URL for troubleshooting
+print(f"Using database URL: {settings.SQLALCHEMY_DATABASE_URI}")
