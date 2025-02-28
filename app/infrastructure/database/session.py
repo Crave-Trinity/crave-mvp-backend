@@ -5,7 +5,6 @@ from sqlalchemy.orm import sessionmaker
 import os
 from app.config.settings import get_settings  # Import get_settings
 
-
 # Debug: Print all database-related environment variables
 print("=== DATABASE ENV VARS ===")
 for key in sorted(os.environ.keys()):
@@ -19,7 +18,7 @@ print("========================")
 
 
 def get_engine():
-    # Get database URL from settings - CORRECTLY, using get_settings()
+    # Get database URL from settings using get_settings()
     settings = get_settings()
     DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI
     print(f"[SESSION] Using database URL: {DATABASE_URL}")
@@ -55,9 +54,20 @@ def get_engine():
 
 engine = get_engine()
 
-# Create session factory (FIX: Added missing parenthesis and bind=engine)
+# Create session factory
 SessionLocal = sessionmaker(
     autocommit=False, 
     autoflush=False, 
     bind=engine
 )
+
+def get_db():
+    """
+    FastAPI dependency that creates a new database session for a request,
+    and ensures it is closed after the request is finished.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
