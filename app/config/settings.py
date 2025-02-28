@@ -41,18 +41,12 @@ class Settings(BaseSettings):
             user = os.environ.get("PGUSER")
             password = os.environ.get("PGPASSWORD")
             host = os.environ.get("PGHOST")
-            port = os.environ.get("PGPORT", "5432")
-            database = os.environ.get("PGDATABASE", "railway")
-            
-            # Form complete connection string
-            return f"postgresql://{user}:{password}@{host}:{port}/{database}"
-            
-        # 3. Railway internal PostgreSQL format (newer versions)
-        if all(key in os.environ for key in ["PGPASSWORD"]):
-            # Railway default format uses internal hostname
-            return f"postgresql://postgres:{os.environ['PGPASSWORD']}@postgres.railway.internal:5432/railway"
-        
-        # 4. Default local development connection
+            port = os.environ.get("PGPORT", 5432)  # Default PostgreSQL port
+            dbname = os.environ.get("PGDATABASE", "railway")  # Default Railway DB name
+
+            return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+
+        # 3. Fallback to a local development database URL if no Railway env vars found
         return "postgresql://postgres:password@localhost:5432/crave_db"
 
     # [Rest of your settings remain unchanged]
@@ -76,12 +70,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=False  # Important for Railway env vars
     )
 
-# Create settings instance
 settings = Settings()
-
-# Debug database URL for troubleshooting
-print(f"[SETTINGS] Database URL: {settings.SQLALCHEMY_DATABASE_URI}")
-print(f"[SETTINGS] Is Railway: {'railway.internal' in settings.SQLALCHEMY_DATABASE_URI or 'rlwy.net' in settings.SQLALCHEMY_DATABASE_URI}")

@@ -18,7 +18,7 @@ fi
 
 echo "==== DATABASE VARIABLES ===="
 env | grep -i -E 'sql|db|postgres|pg' | sort
-echo "=========================="
+echo "==========================="
 
 # Improve PostgreSQL URL detection
 if [ -n "$PGHOST" ] && [ -n "$PGPASSWORD" ]; then
@@ -34,11 +34,10 @@ export SQLALCHEMY_DATABASE_URI=${DATABASE_URL:-$SQLALCHEMY_DATABASE_URI}
 echo "Using SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:0:25}..."
 
 # Skip migrations initially
-echo "Skipping initial migrations to get app running..."
+# alembic upgrade head
 
-# Kill the emergency health responder
-kill $HEALTH_PID || true
+# Start the web server
+uvicorn app.api.main:app --host 0.0.0.0 --port 8000
 
-# Start the API server
-echo "Starting FastAPI server..."
-exec uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+# Kill healthcheck process
+kill $HEALTH_PID
