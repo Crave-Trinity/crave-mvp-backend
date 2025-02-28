@@ -1,54 +1,65 @@
-# Update app/api/main.py to include the new routers
-
+# File: app/api/main.py
 from fastapi import FastAPI
-from app.api.endpoints.admin import router as admin_router
-from app.api.endpoints.health import router as health_router
-from app.api.endpoints.user_queries import router as user_queries_router
-from app.api.endpoints.craving_logs import router as craving_logs_router
-from app.api.endpoints.ai_endpoints import router as ai_router
-from app.api.endpoints.search_cravings import router as search_router
-from app.api.endpoints.analytics import router as analytics_router
-from app.api.endpoints.voice_logs_endpoints import router as voice_logs_router
-from app.api.endpoints.auth_endpoints import router as auth_router
+from fastapi.middleware.cors import CORSMiddleware
 
-# NEW IMPORTS
-from app.api.endpoints.live_updates import router as live_updates_router
-from app.api.endpoints.admin_monitoring import router as admin_monitoring_router
-from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhancement_router
+# Import all your endpoint routers
+from app.api.endpoints import (
+    health, 
+    auth_endpoints,
+    craving_logs,
+    search_cravings,
+    ai_endpoints,
+    analytics,
+    admin,
+    admin_monitoring,
+    user_queries,
+    voice_logs_endpoints,
+    voice_logs_enhancement,
+    # Include any other endpoint modules you have
+)
 
-# NEW: Import Base and engine to create tables as fallback.
-from app.infrastructure.database.models import Base
-from app.infrastructure.database.session import engine
-
+# Create FastAPI app
 app = FastAPI(
     title="CRAVE Trinity Backend",
     description="A modular, AI-powered backend for craving analytics",
-    version="0.1.0"
+    version="0.1.0",
 )
 
-app.include_router(auth_router, prefix="/api")
-app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
-app.include_router(health_router, prefix="/api/health", tags=["Health"])
-app.include_router(user_queries_router, prefix="/api/cravings", tags=["Cravings"])
-app.include_router(craving_logs_router, prefix="/api/cravings", tags=["Cravings"])
-app.include_router(ai_router, prefix="/api", tags=["AI"])
-app.include_router(search_router, prefix="/api/cravings", tags=["Cravings"])
-app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
-app.include_router(voice_logs_router, prefix="/api/voice-logs", tags=["Voice Logs"])
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development; restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# NEW ROUTERS
-app.include_router(live_updates_router, prefix="/api", tags=["Real-time Updates"])
-app.include_router(admin_monitoring_router, prefix="/api/admin", tags=["Admin", "Monitoring"])
-app.include_router(voice_logs_enhancement_router, prefix="/api/voice-logs", tags=["Voice Logs"])
+# Include all routers
+app.include_router(health.router, prefix="/api/health")
+app.include_router(auth_endpoints.router, prefix="/api/auth")
+app.include_router(craving_logs.router, prefix="/api/cravings")
+app.include_router(search_cravings.router, prefix="/api/cravings")
+app.include_router(ai_endpoints.router, prefix="/api/ai")
+app.include_router(analytics.router, prefix="/api/analytics")
+app.include_router(admin.router, prefix="/api/admin")
+app.include_router(admin_monitoring.router, prefix="/api/admin")
+app.include_router(user_queries.router, prefix="/api/cravings/user")
+app.include_router(voice_logs_endpoints.router, prefix="/api/voice-logs")
+app.include_router(voice_logs_enhancement.router, prefix="/api/voice-logs")
+# Include any other routers
 
+# Root endpoint
 @app.get("/")
-def root():
-    return {"message": "Welcome to the CRAVE Trinity Backend API"}
+async def root():
+    """Root endpoint"""
+    return {
+        "service": "CRAVE Trinity Backend",
+        "status": "running",
+        "docs": "/docs"
+    }
 
-@app.on_event("startup")
-def on_startup():
-    from app.api.dependencies import init_db
-    init_db()
-    # Fallback: Create all tables if they don't exist.
-    Base.metadata.create_all(bind=engine)
-    print("Startup complete: Database and other resources initialized.")
+# Root health endpoint for Railway
+@app.get("/health")
+async def railway_health():
+    """Health check endpoint for Railway"""
+    return {"status": "ok", "service": "CRAVE Trinity Backend"}
