@@ -4,12 +4,12 @@ FROM python:3.11-slim
 # Set working directory to /app
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies.  All in one RUN layer for efficiency.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libpq-dev \
-        netcat-openbsd && \  # Install netcat-openbsd specifically
+        netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first for better Docker caching
@@ -21,5 +21,5 @@ RUN pip install -r requirements.txt
 COPY . /app
 
 # Set entrypoint permissions and run the entrypoint script
-RUN chmod +x entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+RUN chmod +x /app/entrypoint.sh  # Correct path!
+ENTRYPOINT ["/app/entrypoint.sh"] # Correct path!
