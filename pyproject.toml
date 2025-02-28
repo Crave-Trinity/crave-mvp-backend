@@ -1,0 +1,5 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Potentially add [tool.poetry], [project], etc., if you want to manage dependencies via Poetry or PEP 621.

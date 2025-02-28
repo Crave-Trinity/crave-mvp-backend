@@ -1,10 +1,12 @@
-# Use slim Python 3.11 image optimized for CPU-only
+# Dockerfile
+
+# Use Python 3.11-slim as the base
 FROM python:3.11-slim
 
-# Set working directory to /app
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies.  All in one RUN layer for efficiency.
+# Install system dependencies in a single RUN to keep layers small
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
@@ -12,14 +14,16 @@ RUN apt-get update && \
         netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first for better Docker caching
+# Copy requirements first for Docker caching
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copy all project files to the container
+# Now copy the entire project
 COPY . /app
 
-# Set entrypoint permissions and run the entrypoint script
-RUN chmod +x /app/entrypoint.sh  # Correct path!
-ENTRYPOINT ["/app/entrypoint.sh"] # Correct path!
+# Make sure our entry script is executable
+RUN chmod +x /app/entrypoint.sh
+
+# Use the entrypoint script, which will start our server + health check
+ENTRYPOINT ["/app/entrypoint.sh"]

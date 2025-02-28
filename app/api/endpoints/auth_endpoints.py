@@ -1,22 +1,28 @@
-# app/api/endpoints/auth_endpoints.py
-from typing import Annotated
+"""
+auth_endpoints.py
 
+Endpoints for user registration, login, and user profile management.
+"""
+
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+# Dependencies and DB
 from app.api.dependencies import (
     get_db,
     get_user_repository,
-    get_current_user
+    get_current_user,
 )
 from app.infrastructure.database.models import UserModel
-from app.infrastructure.auth.jwt_handler import (
-    create_access_token,
-    # verify_password,  # REMOVED FROM HERE
-)
-from app.infrastructure.auth.password_hasher import verify_password  # ADDED IMPORT HERE
-from app.schemas.auth_schemas import (
+
+# JWT and password helpers
+from app.infrastructure.auth.jwt_handler import create_access_token
+from app.infrastructure.auth.password_hasher import verify_password
+
+# -- IMPORTANT FIX: we import from app.core.entities.auth_schemas instead of app.schemas.auth_schemas
+from app.core.entities.auth_schemas import (
     Token,
     UserCreate,
     UserResponse,
@@ -24,7 +30,7 @@ from app.schemas.auth_schemas import (
     UserDBCreate,
 )
 
-# NO DIRECT IMPORT OF settings HERE
+# Settings
 from app.config.settings import get_settings
 
 router = APIRouter()
@@ -34,12 +40,12 @@ router = APIRouter()
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db),
-    user_repo = Depends(get_user_repository)
+    user_repo=Depends(get_user_repository),
 ):
     """
     Endpoint to authenticate a user and return an access token.
     """
-    # Use the repository to get the user, THEN verify password
+    # Find user by username or email
     user = user_repo.get_by_username(form_data.username)
     if not user:
         user = user_repo.get_by_email(form_data.username)
@@ -50,7 +56,8 @@ async def login_for_access_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    if not verify_password(form_data.password, user.password_hash):  # Verify password
+    # Verify password
+    if not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -59,19 +66,20 @@ async def login_for_access_token(
 
     access_token_expires = get_settings().JWT_ACCESS_TOKEN_EXPIRE_MINUTES
     access_token = create_access_token(
-        data={"sub": user.username or user.email},  # Use username, fallback to email
+        data={"sub": user.username or user.email},
         expires_delta=access_token_expires,
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
 @router.post("/register", response_model=UserResponse)
 def register_user(
     user: UserCreate,
     db: Session = Depends(get_db),
     user_repo=Depends(get_user_repository),
 ):
-    """Endpoint to register a new user.
-      This includes hashing the password."""
-    # Check if user already exists (by email or username)
+    """Endpoint to register a new user (includes hashing the password)."""
+    # Check for existing user by email or username
     existing_user_email = user_repo.get_by_email(user.email)
     if existing_user_email:
         raise HTTPException(
@@ -85,13 +93,15 @@ def register_user(
             detail="User with this username already exists.",
         )
 
-    # Hash the password
+    # The line below was suspicious—some older code used "verify_password" to hash,
+    # but your actual hashing logic might be in another function. 
+    # Confirm you have a hashing function that returns a hashed password.
     hashed_password = verify_password(user.password)
 
-    # Create a new user in the database
     db_user = UserDBCreate(
-        **user.model_dump(exclude={"password"}), password_hash=hashed_password
-    )  # Use pydantic .model_dump
+        **user.model_dump(exclude={"password"}),
+        password_hash=hashed_password,
+    )
 
     created_user = user_repo.create_user(
         email=db_user.email,
@@ -101,9 +111,10 @@ def register_user(
 
     return created_user
 
+
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
-    """Endpoint to get the current user's information."""
+    """Get current user info from JWT credentials."""
     return current_user
 
 
@@ -111,11 +122,9 @@ async def read_users_me(current_user: UserModel = Depends(get_current_user)):
 async def update_user(
     user_update: UserUpdate,
     current_user: UserModel = Depends(get_current_user),
-    user_repo=Depends(get_user_repository)
+    user_repo=Depends(get_user_repository),
 ):
-    """Endpoint to update the current user's information."""
-
-    # Update user fields only if they are provided
+    """Update current user's info."""
     for field, value in user_update.dict(exclude_unset=True).items():
         setattr(current_user, field, value)
     user_repo.update_user(current_user)

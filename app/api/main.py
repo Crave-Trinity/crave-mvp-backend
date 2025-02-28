@@ -1,10 +1,13 @@
-# app/api/main.py
+"""
+app/api/main.py
+
+Defines the FastAPI instance and includes routers for all endpoints.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config.settings import get_settings  # Import get_settings
 
-
-# Import all your endpoint routers
+from app.config.settings import get_settings
 from app.api.endpoints import (
     health,
     auth_endpoints,
@@ -17,20 +20,18 @@ from app.api.endpoints import (
     user_queries,
     voice_logs_endpoints,
     voice_logs_enhancement,
-    # Include any other endpoint modules you have
 )
 
-# Create FastAPI app
 app = FastAPI(
     title="CRAVE Trinity Backend",
     description="A modular, AI-powered backend for craving analytics",
     version="0.1.0",
 )
 
-# Add CORS middleware
+# Add CORS middleware (be sure to lock this down in production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development; restrict in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,13 +41,12 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """
-    Initialize settings on startup.  This ensures environment variables are loaded
-    before any dependencies are resolved.
+    Initialize settings on startup (read environment variables, etc.).
     """
-    get_settings()  # Call get_settings() to initialize the settings
+    get_settings()  # calling get_settings() ensures env variables are loaded
 
 
-# Include all routers
+# Include routers from all endpoints
 app.include_router(health.router, prefix="/api/health")
 app.include_router(auth_endpoints.router, prefix="/api/auth")
 app.include_router(craving_logs.router, prefix="/api/cravings")
@@ -59,20 +59,20 @@ app.include_router(user_queries.router, prefix="/api/cravings/user")
 app.include_router(voice_logs_endpoints.router, prefix="/api/voice-logs")
 app.include_router(voice_logs_enhancement.router, prefix="/api/voice-logs")
 
-# Include any other routers
 
-# Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint."""
     return {
         "service": "CRAVE Trinity Backend",
         "status": "running",
         "docs": "/docs"
     }
 
-# Root health endpoint for Railway
+
 @app.get("/health")
 async def railway_health():
-    """Health check endpoint for Railway"""
+    """
+    Health check endpoint (Railway expects /health by default).
+    """
     return {"status": "ok", "service": "CRAVE Trinity Backend"}
