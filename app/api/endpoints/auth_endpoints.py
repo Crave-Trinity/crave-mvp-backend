@@ -7,14 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import (
     get_db,
-    get_user_repository,
+    get_user_repository,  # We'll get the repository, then use *its* method
     get_current_user
 )
 from app.infrastructure.database.models import UserModel
-from app.infrastructure.auth.jwt_handler import (  # CORRECTED IMPORT
-    authenticate_user,
+from app.infrastructure.auth.jwt_handler import (
     create_access_token,
-    verify_password,
+    verify_password, # Removed authenticate_user.
 )
 from app.schemas.auth_schemas import (
     Token,
@@ -34,32 +33,20 @@ router = APIRouter()
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db),
+    user_repo = Depends(get_user_repository) # Get the user repo
 ):
     """
     Endpoint to authenticate a user and return an access token.
-
-    This endpoint handles user authentication using the OAuth2 password flow.
-    It takes username/password credentials, validates them, and returns a JWT
-    access token upon successful authentication.
-
-    Args:
-        form_data: OAuth2PasswordRequestForm containing username and password
-        db: Database session dependency
-
-    Returns:
-        Token: Contains the access token and token type
-
-    Raises:
-        HTTPException: If authentication fails
     """
-    user = authenticate_user(db, form_data.username, form_data.password)
+    # Use the repository's authenticate_user method!
+    user = user_repo.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = get_settings().JWT_ACCESS_TOKEN_EXPIRE_MINUTES  # Use get_settings()
+    access_token_expires = get_settings().JWT_ACCESS_TOKEN_EXPIRE_MINUTES
     access_token = create_access_token(
         data={"sub": user.username or user.email},  # Use username, fallback to email
         expires_delta=access_token_expires,
