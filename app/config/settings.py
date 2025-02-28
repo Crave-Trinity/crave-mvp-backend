@@ -39,8 +39,8 @@ class Settings(BaseSettings):
 
     # API Keys - NO DEFAULTS
     PINECONE_API_KEY: str = Field(...)
-    PINECONE_ENV: str = Field(default="us-east-1-aws") # Keep the default for the *environment*, but not the KEY
-    PINECONE_INDEX_NAME: str = Field(default="crave-embeddings") #Keep default for the index name
+    PINECONE_ENV: str = Field(default="us-east-1-aws")
+    PINECONE_INDEX_NAME: str = Field(default="crave-embeddings")
     OPENAI_API_KEY: str = Field(...)
     HUGGINGFACE_API_KEY: str = Field(...)
 
@@ -59,3 +59,15 @@ class Settings(BaseSettings):
     # Pydantic Settings
     # -----------------------------------------
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+
+_settings = None  # Global variable to hold the settings instance
+
+def get_settings():
+    """
+    Get the settings instance.  Creates it if it doesn't exist yet.
+    """
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings

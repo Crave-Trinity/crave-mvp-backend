@@ -1,7 +1,8 @@
 # app/api/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from app.config.settings import Settings  # Import Settings
+from app.config.settings import get_settings, Settings # Import get_settings
+
 
 # Import all your endpoint routers
 from app.api.endpoints import (
@@ -35,17 +36,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Settings (important for Pydantic to load env vars)
-# settings = Settings() # NO LONGER HERE
 
 @app.on_event("startup")
 async def startup_event():
     """
-    Initialize settings on startup. This ensures environment variables are loaded
+    Initialize settings on startup.  This ensures environment variables are loaded
     before any dependencies are resolved.
     """
-    global settings
-    settings = Settings()
+    get_settings()  # Call get_settings() to initialize the settings
+
 
 # Include all routers
 app.include_router(health.router, prefix="/api/health")
@@ -59,6 +58,7 @@ app.include_router(admin_monitoring.router, prefix="/api/admin")
 app.include_router(user_queries.router, prefix="/api/cravings/user")
 app.include_router(voice_logs_endpoints.router, prefix="/api/voice-logs")
 app.include_router(voice_logs_enhancement.router, prefix="/api/voice-logs")
+
 # Include any other routers
 
 # Root endpoint

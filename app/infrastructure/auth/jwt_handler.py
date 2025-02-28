@@ -5,8 +5,7 @@ from typing import Dict, Optional
 
 from jose import jwt, JWTError
 
-# NO import of settings here at the top of the file
-
+from app.config.settings import get_settings  # Import get_settings
 
 def create_access_token(data: Dict, expires_delta: Optional[int] = None) -> str:
     """
@@ -19,8 +18,7 @@ def create_access_token(data: Dict, expires_delta: Optional[int] = None) -> str:
     Returns:
         str: The encoded JWT string
     """
-    from app.config.settings import settings  # Import INSIDE the function
-
+    settings = get_settings()  # Use get_settings()
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(
         minutes=expires_delta or settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
@@ -46,8 +44,7 @@ def decode_access_token(token: str) -> Dict:
     Raises:
         JWTError: If token is invalid or expired
     """
-    from app.config.settings import settings  # Import INSIDE the function
-
+    settings = get_settings()  # Use get_settings()
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]

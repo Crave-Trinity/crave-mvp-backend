@@ -1,15 +1,8 @@
 # app/api/dependencies.py
-"""
-Centralized FastAPI dependencies for database sessions, repositories, and authentication.
-
-This module promotes reusability and testability by providing consistent ways to access
-database connections, data repositories, and authenticated user information.
-"""
-
 import os
 from typing import Generator
 
-from sqlalchemy import create_engine, exc, text  # Added text import for SQLAlchemy 2.0+ compatibility
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -21,18 +14,20 @@ from app.infrastructure.database.repository import (
     VoiceLogRepository,
 )
 from app.infrastructure.database.models import UserModel
+from app.config.settings import get_settings  # Import get_settings
+
 # NO import of settings here
 
 # Retrieve the database URL (fallback to a default if not set, good for local dev)
-DATABASE_URL = os.getenv(
-    "SQLALCHEMY_DATABASE_URI", "postgresql://postgres:password@db:5432/crave_db"
-)
+# DATABASE_URL = os.getenv(
+#     "SQLALCHEMY_DATABASE_URI", "postgresql://postgres:password@db:5432/crave_db"
+# )
 
 # Create the SQLAlchemy engine.
-engine = create_engine(DATABASE_URL)
+# engine = create_engine(DATABASE_URL) # No longer create the engine here.
 
 # Create a configured session class.
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def init_db() -> None:
@@ -42,6 +37,7 @@ def init_db() -> None:
     This function tests the database connection using a simple query.
     Uses SQLAlchemy 2.0+ compatible syntax with text() for SQL expressions.
     """
+    engine = create_engine(get_settings().SQLALCHEMY_DATABASE_URI, connect_args={"sslmode": "require"} if "railway" in get_settings().SQLALCHEMY_DATABASE_URI else {})
     try:
         with engine.connect() as connection:
             # Use text() to create a SQL expression - required for SQLAlchemy 2.0+
@@ -62,6 +58,9 @@ def get_db() -> Generator[Session, None, None]:
     Yields:
         Session: A SQLAlchemy database session
     """
+    settings = get_settings()  # Get the settings instance
+    engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, connect_args={"sslmode": "require"} if "railway" in settings.SQLALCHEMY_DATABASE_URI else {})
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
     try:
         yield db
@@ -145,7 +144,7 @@ async def get_current_user(
     Raises:
         HTTPException: If the token is invalid or the user cannot be found
     """
-    from app.config.settings import settings  # Import INSIDE the function
+    settings = get_settings()  # Use get_settings()
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
