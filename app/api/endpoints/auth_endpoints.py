@@ -1,8 +1,4 @@
-"""
-auth_endpoints.py
-
-Endpoints for user registration, login, and user profile management.
-"""
+# File: app/api/endpoints/auth_endpoints.py
 
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -19,7 +15,10 @@ from app.infrastructure.database.models import UserModel
 
 # JWT and password helpers
 from app.infrastructure.auth.jwt_handler import create_access_token
-from app.infrastructure.auth.password_hasher import verify_password
+from app.infrastructure.auth.password_hasher import (
+    verify_password,
+    hash_password
+)
 
 # -- IMPORTANT FIX: we import from app.core.entities.auth_schemas instead of app.schemas.auth_schemas
 from app.core.entities.auth_schemas import (
@@ -34,7 +33,6 @@ from app.core.entities.auth_schemas import (
 from app.config.settings import get_settings
 
 router = APIRouter()
-
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
@@ -71,7 +69,6 @@ async def login_for_access_token(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-
 @router.post("/register", response_model=UserResponse)
 def register_user(
     user: UserCreate,
@@ -93,10 +90,8 @@ def register_user(
             detail="User with this username already exists.",
         )
 
-    # The line below was suspicious—some older code used "verify_password" to hash,
-    # but your actual hashing logic might be in another function. 
-    # Confirm you have a hashing function that returns a hashed password.
-    hashed_password = verify_password(user.password)
+    # Use the correct hashing function
+    hashed_password = hash_password(user.password)
 
     db_user = UserDBCreate(
         **user.model_dump(exclude={"password"}),
@@ -111,12 +106,10 @@ def register_user(
 
     return created_user
 
-
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: UserModel = Depends(get_current_user)):
     """Get current user info from JWT credentials."""
     return current_user
-
 
 @router.put("/me", response_model=UserResponse)
 async def update_user(
