@@ -1,10 +1,11 @@
-# File: app/api/main.py
+# app/api/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.config.settings import Settings  # Import Settings
 
 # Import all your endpoint routers
 from app.api.endpoints import (
-    health, 
+    health,
     auth_endpoints,
     craving_logs,
     search_cravings,
@@ -47,6 +48,9 @@ app.include_router(user_queries.router, prefix="/api/cravings/user")
 app.include_router(voice_logs_endpoints.router, prefix="/api/voice-logs")
 app.include_router(voice_logs_enhancement.router, prefix="/api/voice-logs")
 # Include any other routers
+
+# Initialize Settings (important for Pydantic to load env vars)
+settings = Settings()
 
 # Root endpoint
 @app.get("/")

@@ -1,9 +1,7 @@
-# File: app/config/settings.py
-# Fix: Add robust Railway database URL detection
-
+# app/config/settings.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from typing import Dict
+from typing import Dict, Optional
 import os
 
 class Settings(BaseSettings):
@@ -18,58 +16,46 @@ class Settings(BaseSettings):
     # -----------------------------------------
     # Database - Railway Support
     # -----------------------------------------
-    # Handle all possible Railway PostgreSQL environment variables
-    SQLALCHEMY_DATABASE_URI: str = Field(
-        default=lambda: Settings._get_database_url(),
-    )
-    
-    @staticmethod
-    def _get_database_url():
-        """Robust database URL detection for Railway and local development."""
-        # 1. Check complete connection strings first
-        if url := os.environ.get("DATABASE_URL"):
-            return url
-            
-        if url := os.environ.get("SQLALCHEMY_DATABASE_URI"):
-            return url
-            
-        if url := os.environ.get("POSTGRES_URL"):
-            return url
-        
-        # 2. Check for Railway-specific PostgreSQL components
-        if all(key in os.environ for key in ["PGUSER", "PGPASSWORD", "PGHOST"]):
-            user = os.environ.get("PGUSER")
-            password = os.environ.get("PGPASSWORD")
-            host = os.environ.get("PGHOST")
-            port = os.environ.get("PGPORT", 5432)  # Default PostgreSQL port
-            dbname = os.environ.get("PGDATABASE", "railway")  # Default Railway DB name
+    SQLALCHEMY_DATABASE_URI: str = Field(default_factory=lambda: Settings._get_database_url())
 
+    @staticmethod
+    def _get_database_url() -> str:
+        """Robust database URL detection for Railway and local development."""
+        url: Optional[str] = os.environ.get("DATABASE_URL") or \
+               os.environ.get("SQLALCHEMY_DATABASE_URI") or \
+               os.environ.get("POSTGRES_URL")
+        if url:
+            return url
+
+        if all(key in os.environ for key in ["PGUSER", "PGPASSWORD", "PGHOST"]):
+            user = os.environ["PGUSER"]
+            password = os.environ["PGPASSWORD"]
+            host = os.environ["PGHOST"]
+            port = os.environ.get("PGPORT", "5432")
+            dbname = os.environ.get("PGDATABASE", "railway")
             return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
 
-        # 3. Fallback to a local development database URL if no Railway env vars found
         return "postgresql://postgres:password@localhost:5432/crave_db"
 
-    # [Rest of your settings remain unchanged]
-    PINECONE_API_KEY: str = Field(..., env="PINECONE_API_KEY")
-    PINECONE_ENV: str = Field("us-east-1-aws", env="PINECONE_ENV")
-    PINECONE_INDEX_NAME: str = Field("crave-embeddings", env="PINECONE_INDEX_NAME")
-    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
-    HUGGINGFACE_API_KEY: str = Field(..., env="HUGGINGFACE_API_KEY")
-    LLAMA2_MODEL_NAME: str = Field("meta-llama/Llama-2-13b-chat-hf", env="LLAMA2_MODEL_NAME")
+    # API Keys - NO DEFAULTS
+    PINECONE_API_KEY: str = Field(...)
+    PINECONE_ENV: str = Field(default="us-east-1-aws") # Keep the default for the *environment*, but not the KEY
+    PINECONE_INDEX_NAME: str = Field(default="crave-embeddings") #Keep default for the index name
+    OPENAI_API_KEY: str = Field(...)
+    HUGGINGFACE_API_KEY: str = Field(...)
+
+    # Other Settings
+    LLAMA2_MODEL_NAME: str = Field(default="meta-llama/Llama-2-13b-chat-hf")
     LORA_PERSONAS: Dict[str, str] = {
         "NighttimeBinger": "path_or_hub/nighttime-binger-lora",
         "StressCraver": "path_or_hub/stress-craver-lora",
     }
-    JWT_SECRET: str = Field(..., env="JWT_SECRET")
-    JWT_ALGORITHM: str = Field("HS256", env="JWT_ALGORITHM")
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(60, env="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    JWT_SECRET: str = Field(...)
+    JWT_ALGORITHM: str = Field(default="HS256")
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60)
+    MIGRATION_MODE: str = Field(default="auto")
 
     # -----------------------------------------
     # Pydantic Settings
     # -----------------------------------------
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-    )
-
-settings = Settings()
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
