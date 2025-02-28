@@ -35,6 +35,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize Settings (important for Pydantic to load env vars)
+# settings = Settings() # NO LONGER HERE
+
+@app.on_event("startup")
+async def startup_event():
+    """
+    Initialize settings on startup. This ensures environment variables are loaded
+    before any dependencies are resolved.
+    """
+    global settings
+    settings = Settings()
+
 # Include all routers
 app.include_router(health.router, prefix="/api/health")
 app.include_router(auth_endpoints.router, prefix="/api/auth")
@@ -48,9 +60,6 @@ app.include_router(user_queries.router, prefix="/api/cravings/user")
 app.include_router(voice_logs_endpoints.router, prefix="/api/voice-logs")
 app.include_router(voice_logs_enhancement.router, prefix="/api/voice-logs")
 # Include any other routers
-
-# Initialize Settings (important for Pydantic to load env vars)
-settings = Settings()
 
 # Root endpoint
 @app.get("/")
