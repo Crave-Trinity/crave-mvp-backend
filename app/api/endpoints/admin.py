@@ -2,57 +2,66 @@
 # File: app/api/endpoints/admin.py
 #====================================================
 
-# Import FastAPI's APIRouter and other needed modules
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.infrastructure.auth.auth_service import AuthService
 from app.infrastructure.database.session import get_db
 from app.infrastructure.database.models import UserModel
 
-# Initialize the router instance at the top
 router = APIRouter()
 
-# -------------------------------
-# Existing Admin Endpoints
-# -------------------------------
+# ------------------------------------------------------------------
+# Admin Endpoints
+# ------------------------------------------------------------------
+
 @router.post("/stamp-db")
 def stamp_db():
-    # ... your existing code for stamping the DB ...
+    """
+    Stamp the database to mark it as up-to-date.
+    (Replace with your stamping logic if needed.)
+    """
+    # [Your stamping logic here]
     return {"detail": "Database stamped to 'head'"}
 
 @router.post("/add-missing-column")
 def add_missing_column():
-    # ... your existing code for adding a column ...
+    """
+    Add a missing column to the database if it does not exist.
+    This endpoint is idempotent.
+    """
+    # [Your column addition logic here]
     return {"detail": "Column added if missing"}
 
-# -------------------------------
-# New Endpoint: Generate Test Token
-# -------------------------------
 @router.post("/generate-test-token")
 def generate_test_token(db: Session = Depends(get_db)):
     """
-    Creates a "test" JWT for development without requiring a real user login flow.
+    Generate a test JWT token for development purposes.
     
-    1. Fetches or creates a user with ID=1 (our 'admin' user).
-    2. Generates a JWT using AuthService.generate_token.
-    3. Returns JSON: {"token": "<the_jwt_string>"}
+    Steps:
+      1. Attempt to retrieve the admin user (with ID=1).
+      2. If not found, create a minimal admin user.
+      3. Generate a JWT using AuthService.generate_token.
+      4. Return the token as JSON: {"token": "<jwt_token>"}.
+    
+    Note: This endpoint should be used only in development.
     """
-    # Try to find user #1 in the database
+    # Retrieve user with ID 1 (designated admin user)
     user = db.query(UserModel).filter(UserModel.id == 1).first()
-    # If it doesn't exist, create a minimal user #1
+
+    # If the admin user does not exist, create one with default values.
     if not user:
         user = UserModel(
             id=1,
             email="admin@example.com",
             username="admin",
-            hashed_password="fakehash",  # Use an appropriate placeholder
+            hashed_password="fakehash",  # Use a proper hash for production!
             is_active=True,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
     
-    # Generate a token for that user
+    # Generate a JWT token for the admin user.
     token = AuthService().generate_token(
         user_id=user.id,
         email=user.email
