@@ -1,10 +1,11 @@
+#======================
+# entrypoint.sh
+#======================
 #!/bin/bash
 set -e
 
 # ------------------------------------------------------------------------------
 # Start a minimal health check responder on port 8081.
-# We use 8081 to avoid conflicting with uvicorn's binding on $PORT (which may be 8080 on Railway).
-# This background process ensures the container responds to basic health requests.
 # ------------------------------------------------------------------------------
 (
   echo "Starting minimal health check responder on port 8081..."
@@ -34,21 +35,10 @@ env | grep -i -E 'sql|db|postgres|pg' | sort || echo "(none found)"
 echo "==========================="
 
 # ------------------------------------------------------------------------------
-# Construct DATABASE_URL from PG* variables if available.
+# Ensure DATABASE_URL is set or default (for local dev).
 # ------------------------------------------------------------------------------
-if [ -n "$PGHOST" ] && [ -n "$PGPASSWORD" ]; then
-  export PGUSER=${PGUSER:-postgres}
-  export PGDATABASE=${PGDATABASE:-railway}
-  export PGPORT=${PGPORT:-5432}
-  export DATABASE_URL="postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE"
-  echo "Constructed DATABASE_URL from PG* variables."
-fi
-
-# ------------------------------------------------------------------------------
-# Set SQLALCHEMY_DATABASE_URI to DATABASE_URL if defined.
-# ------------------------------------------------------------------------------
-export SQLALCHEMY_DATABASE_URI=${DATABASE_URL:-$SQLALCHEMY_DATABASE_URI}
-echo "Using SQLALCHEMY_DATABASE_URI: ${SQLALCHEMY_DATABASE_URI:0:25}..."
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@db:5432/crave_db}"
+echo "Using DATABASE_URL: ${DATABASE_URL:0:60}..."
 
 # ------------------------------------------------------------------------------
 # Run Alembic migrations to ensure the database schema is up-to-date.
