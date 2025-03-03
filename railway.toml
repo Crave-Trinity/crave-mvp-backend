@@ -1,4 +1,4 @@
-# File: railway.toml
+# File: railway.toml (CORRECTED)
 # Purpose: Configure Railway deployment behavior
 
 [environments]
@@ -11,17 +11,17 @@
     builder = "dockerfile"
     # Optional: Notify on build failures
     # buildCommand = "curl -s -X POST $WEBHOOK_URL -d 'Build $RAILWAY_SERVICE_NAME $RAILWAY_ENVIRONMENT_NAME $RAILWAY_GIT_COMMIT_SHA'"
-    
+
   [environments.production.deploy]
     # Deploy with these specific settings
     startCommand = "./entrypoint.sh"
-    healthcheckPath = "/health"
+    healthcheckPath = "/api/health"  # CHANGED: Correct health check path
     healthcheckTimeout = 10
 
 [deploy]
   # General deployment settings
   numReplicas = 1
-  healthcheckPath = "/health"
+  healthcheckPath = "/api/health"  # CHANGED: Correct health check path
   healthcheckTimeout = 10
 
 # Remember to create a /health endpoint in your FastAPI app!
