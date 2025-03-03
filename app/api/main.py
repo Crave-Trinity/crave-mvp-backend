@@ -29,10 +29,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Configure CORS middleware (lock this down for production as needed)
+# Configure CORS middleware (lock this down for production if needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Consider restricting origins in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +43,7 @@ app.include_router(health.router, prefix="/api/health")
 app.include_router(auth_endpoints.router, prefix="/api/auth")
 app.include_router(craving_logs.router, prefix="/api/cravings")
 app.include_router(search_cravings.router, prefix="/api/cravings")
-app.include_router(ai_endpoints.router, prefix="/api/ai")
+app.include_router(ai_endpoints.router, prefix="/api/v1")   # <-- POST /api/v1/chat
 app.include_router(analytics.router, prefix="/api/analytics")
 app.include_router(admin.router, prefix="/api/admin")
 app.include_router(admin_monitoring.router, prefix="/api/admin")

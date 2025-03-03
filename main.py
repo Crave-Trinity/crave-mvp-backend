@@ -8,21 +8,18 @@
 #                                                                              
 ################################################################################
 #
+# main.py
 #
+# Root-level entry point for local development:
+#   $ python main.py
 #
-"""
-main.py
-
-Root-level entry point for local development:
-   $ python main.py
-
-To run in local dev, it just imports 'app' from app/api/main.py
-and serves with uvicorn on port 8000 with auto-reload.
-"""
+# To run in local dev, it just imports 'app' from app/api/main.py
+# and serves with uvicorn on port 8000 with auto-reload.
+#
 
 import uvicorn
 from app.api.main import app
 
 if __name__ == "__main__":
     # Start the FastAPI application on port 8000 with auto-reload
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
