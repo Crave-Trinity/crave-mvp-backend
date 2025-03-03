@@ -7,23 +7,22 @@
     ENV PYTHONUNBUFFERED=1
     WORKDIR /app
     
-    # Install dependencies in a single layer for caching efficiency
+    # Install dependencies
     RUN apt-get update && apt-get install -y --no-install-recommends \
         netcat-openbsd \
         build-essential \
         libpq-dev \
-        dos2unix && \
-        rm -rf /var/lib/apt/lists/*
+        && rm -rf /var/lib/apt/lists/*  # Clean up in the same layer
     
     COPY requirements.txt /app/
     RUN pip install --no-cache-dir -r requirements.txt
     
     COPY . /app/
     
-    # Convert line endings and make executable in one step
-    RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+    # VERY IMPORTANT: Fix line endings and set executable permissions within the Docker build
+    RUN sed -i 's/\r$//' /app/entrypoint.sh && \
+        chmod +x /app/entrypoint.sh
     
     EXPOSE 8000
     
-    # Explicitly use bash
     ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
