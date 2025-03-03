@@ -13,46 +13,30 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from app.config.settings import get_settings  # <-- Use get_settings for a single shared instance
+from app.config.settings import get_settings
 from app.infrastructure.database.session import get_db
 from app.infrastructure.database.models import UserModel
 
 settings = get_settings()
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-
 class AuthService:
-    """
-    Service that handles JWT creation and retrieval of current user from token.
-    """
-
     def generate_token(self, user_id: int, email: str) -> str:
-        """
-        Create a JWT token for the user with an expiration.
-        """
         expires_delta = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         expire = datetime.utcnow() + expires_delta
-
         payload = {
             "sub": str(user_id),
             "email": email,
             "exp": expire,
             "iat": datetime.utcnow(),
         }
-        token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
-        return token
+        return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
     def get_current_user(
         self,
         token: str = Depends(oauth2_scheme),
         db: Session = Depends(get_db),
     ) -> UserModel:
-        """
-        1. Decode JWT token from "Authorization: Bearer <token>".
-        2. Fetch the user from DB by user_id in 'sub' claim.
-        3. Return *UserModel* or raise HTTPException if invalid/expired.
-        """
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -83,7 +67,6 @@ class AuthService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="User is not active"
                 )
-
             return user
 
         except jwt.ExpiredSignatureError:
