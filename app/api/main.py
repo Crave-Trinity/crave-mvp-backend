@@ -1,5 +1,5 @@
-\#====================================================
-# File: app/api/main.py (CORRECTED)
+#====================================================
+# File: app/api/main.py
 #====================================================
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,8 +51,3 @@ async def root():
         "status": "running",
         "docs": "/docs"
     }
-
-# Remove the redundant /health definition
-# @app.get("/health")
-# async def health():
-#     return {"status": "ok", "service": "CRAVE Trinity Backend"}
