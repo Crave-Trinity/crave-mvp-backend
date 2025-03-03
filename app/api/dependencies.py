@@ -1,6 +1,6 @@
-#======================
-# app/api/dependencies.py
-#======================
+#====================================================
+# File: app/api/dependencies.py
+#====================================================
 import os
 from typing import Generator
 from sqlalchemy import create_engine, text
@@ -9,23 +9,20 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
+from app.infrastructure.database.models import UserModel
 from app.infrastructure.database.repository import (
     CravingRepository,
     UserRepository,
     VoiceLogRepository,
 )
-from app.infrastructure.database.models import UserModel
 from app.config.settings import get_settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 def init_db() -> None:
-    """
-    Verifies database connectivity at startup.
-    """
     engine = create_engine(
         get_settings().DATABASE_URL,
-        connect_args={"sslmode": "require"} if "railway" in get_settings().DATABASE_URL else {}
+        connect_args={"sslmode": "require"} if "railway" in get_settings().DATABASE_URL else {},
     )
     try:
         with engine.connect() as connection:
@@ -36,13 +33,10 @@ def init_db() -> None:
         print("Error establishing database connection:", e)
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    Provide a database session in a FastAPI dependency.
-    """
     db_settings = get_settings()
     engine = create_engine(
         db_settings.DATABASE_URL,
-        connect_args={"sslmode": "require"} if "railway" in db_settings.DATABASE_URL else {}
+        connect_args={"sslmode": "require"} if "railway" in db_settings.DATABASE_URL else {},
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
@@ -63,11 +57,8 @@ def get_voice_log_repository(db: Session = Depends(get_db)) -> VoiceLogRepositor
 async def get_current_user(
     request: Request,
     db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme)
+    token: str = Depends(oauth2_scheme),
 ) -> UserModel:
-    """
-    Get user from JWT token claims, backward-compatible by username/email.
-    """
     settings = get_settings()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
