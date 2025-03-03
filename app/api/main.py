@@ -3,12 +3,6 @@ app/api/main.py
 
 Defines the FastAPI instance and includes routers for all endpoints.
 """
-"""
-File: app/api/main.py
----------------------
-This module defines the FastAPI application instance and includes all endpoint routers.
-A health check endpoint (/health) is defined for Railway's monitoring.
-"""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

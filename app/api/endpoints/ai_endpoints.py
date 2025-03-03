@@ -2,7 +2,6 @@
 #  ai_endpoints.py
 #  FastAPI endpoints for AI-related features
 #  Uncle Bob + GoF + Clean Architecture
-#  Last Updated: <today's date>
 # ==============================================================
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -43,9 +42,6 @@ class RAGResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ----------------------------------------------------------------
-# Existing AI endpoints
-# ----------------------------------------------------------------
 @router.post("/ai/insights", tags=["AI"], response_model=InsightResponse)
 async def ai_insights(user_id: int, query: Optional[str] = None):
     """
