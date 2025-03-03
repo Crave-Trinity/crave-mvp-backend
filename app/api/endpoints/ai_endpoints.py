@@ -1,4 +1,9 @@
-# File: app/api/endpoints/ai_endpoints.py
+# ==============================================================
+#  ai_endpoints.py
+#  FastAPI endpoints for AI-related features
+#  Uncle Bob + GoF + Clean Architecture
+#  Last Updated: <today's date>
+# ==============================================================
 
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional, List
@@ -12,6 +17,9 @@ from app.infrastructure.database.models import UserModel
 
 router = APIRouter()
 
+# ----------------------------------------------------------------
+# Existing Models for other AI endpoints
+# ----------------------------------------------------------------
 class InsightResponse(BaseModel):
     insights: str
     model_config = ConfigDict(from_attributes=True)
@@ -35,6 +43,9 @@ class RAGResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ----------------------------------------------------------------
+# Existing AI endpoints
+# ----------------------------------------------------------------
 @router.post("/ai/insights", tags=["AI"], response_model=InsightResponse)
 async def ai_insights(user_id: int, query: Optional[str] = None):
     """
@@ -68,7 +79,6 @@ async def ai_personas():
     Final URL: GET /api/ai/personas
     """
     try:
-        # Now we just return the dummy list from analytics_service
         personas = list_personas()
         return {"personas": personas}
     except Exception as exc:
@@ -121,4 +131,35 @@ async def ai_query(
         raise HTTPException(
             status_code=500,
             detail=f"AI query failed: {str(exc)}"
+        )
+
+
+# ----------------------------------------------------------------
+# NEW: v1/chat endpoint matching the iOS frontend’s POST /api/v1/chat
+# ----------------------------------------------------------------
+class ChatRequestDTO(BaseModel):
+    userQuery: str
+
+class ChatResponseDTO(BaseModel):
+    message: str
+
+@router.post("/v1/chat", tags=["Chat"], response_model=ChatResponseDTO)
+async def chat_v1(
+    payload: ChatRequestDTO,
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Handles the chat-based AI request from the iOS app’s POST /api/v1/chat.
+    Returns JSON in { "message": "<AI response>" } format.
+    """
+    try:
+        answer = rag_service.generate_personalized_insight(
+            user_id=current_user.id,
+            query=payload.userQuery
+        )
+        return {"message": answer}
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chat error: {str(exc)}"
         )
