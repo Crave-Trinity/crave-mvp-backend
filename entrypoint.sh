@@ -10,5 +10,10 @@ set -e
 ) &
 HEALTH_PID=$!
 
-echo "==== RAILWAY ENV DETECT ===="
-...
+echo "SIMPLE TEST LINE"
+
+# echo "==== RAILWAY ENV DETECT ===="  <-- COMMENT THIS OUT FOR NOW
+# ... rest of your original script ... (you can add it back later if this works)
+echo "Script continues after line 14"
+
+# Your original commands that follow "==== RAILWAY ENV DETECT ====" should go here
