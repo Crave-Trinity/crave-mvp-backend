@@ -10,10 +10,23 @@ set -e
 ) &
 HEALTH_PID=$!
 
-echo "SIMPLE TEST LINE"
+echo "==== RAILWAY ENV DETECT ===="
+if [[ -n "$RAILWAY_SERVICE_NAME" || -n "$RAILWAY_ENVIRONMENT_NAME" ]]; then
+  echo "Railway detected! Service: ${RAILWAY_SERVICE_NAME:-unknown}, Env: ${RAILWAY_ENVIRONMENT_NAME:-unknown}"
+else
+  echo "No Railway env variables detected."
+fi
+echo "==========================="
 
-# echo "==== RAILWAY ENV DETECT ===="  <-- COMMENT THIS OUT FOR NOW
-# ... rest of your original script ... (you can add it back later if this works)
-echo "Script continues after line 14"
+echo "==== DB ENV VARS ===="
+env | grep -i -E "sql|db|postgres|pg" | sort || echo "(none found)"
+echo "====================="
 
-# Your original commands that follow "==== RAILWAY ENV DETECT ====" should go here
+export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@db:5432/crave_db}"
+echo "Using DATABASE_URL: ${DATABASE_URL:0:60}..."
+
+echo "Running Alembic migrations..."
+alembic upgrade head
+
+exec uvicorn app.api.main:app --host 0.0.0.0 --port "${PORT:-8000}"
+kill $HEALTH_PID
