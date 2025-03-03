@@ -1,5 +1,5 @@
-#====================================================
-# File: app/api/main.py
+\#====================================================
+# File: app/api/main.py (CORRECTED)
 #====================================================
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,7 +31,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router, prefix="/api/health")
+# Correctly include the health router, at the /api prefix
+app.include_router(health.router, prefix="/api")
 app.include_router(auth_endpoints.router, prefix="/api/auth")
 app.include_router(craving_logs.router, prefix="/api/cravings")
 app.include_router(search_cravings.router, prefix="/api/cravings")
@@ -51,6 +52,7 @@ async def root():
         "docs": "/docs"
     }
 
-@app.get("/health")
-async def health():
-    return {"status": "ok", "service": "CRAVE Trinity Backend"}
+# Remove the redundant /health definition
+# @app.get("/health")
+# async def health():
+#     return {"status": "ok", "service": "CRAVE Trinity Backend"}

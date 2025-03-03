@@ -1,15 +1,6 @@
 #!/bin/bash
 set -e
 
-(
-  echo "Starting minimal health check responder on port 8081..."
-  while true; do
-    echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"ok\"}" \
-      | nc -l -p 8081 -q 1 || true
-  done
-) &
-HEALTH_PID=$!
-
 echo "==== RAILWAY ENV DETECT ===="
 if [[ -n "$RAILWAY_SERVICE_NAME" || -n "$RAILWAY_ENVIRONMENT_NAME" ]]; then
   echo "Railway detected! Service: ${RAILWAY_SERVICE_NAME:-unknown}, Env: ${RAILWAY_ENVIRONMENT_NAME:-unknown}"
@@ -29,4 +20,14 @@ echo "Running Alembic migrations..."
 alembic upgrade head
 
 exec uvicorn app.api.main:app --host 0.0.0.0 --port "${PORT:-8000}"
-kill $HEALTH_PID
+
+# The following lines are removed:
+# (
+#   echo "Starting minimal health check responder on port 8081..."
+#   while true; do
+#     echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"ok\"}" \
+#       | nc -l -p 8081 -q 1 || true
+#   done
+# ) &
+# HEALTH_PID=$!
+# kill $HEALTH_PID
