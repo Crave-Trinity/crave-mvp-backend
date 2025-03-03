@@ -28,4 +28,5 @@ async def chat_v1(payload: ChatRequestDTO):
         )
         return {"message": response["choices"][0]["message"]["content"]}
     except Exception as exc:
+        print("OpenAI Chat Error:", str(exc))
         raise HTTPException(status_code=500, detail=f"Chat error: {str(exc)}")
