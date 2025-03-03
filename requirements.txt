@@ -1,3 +1,4 @@
+# requirements.txt 
 fastapi==0.100.0
 uvicorn==0.23.0
 pydantic==2.10.6
@@ -19,7 +20,8 @@ protobuf>=4.21.0
 grpcio>=1.44.0
 googleapis-common-protos>=1.56.0
 openai>=1.2.0
-langchain==0.3.19
+langchain>=0.1.0     # CRITICAL: Updated to a compatible version
+langchain-openai    # CRITICAL: Added the OpenAI integration package
 
 # Utility
 pytest==7.3.1
