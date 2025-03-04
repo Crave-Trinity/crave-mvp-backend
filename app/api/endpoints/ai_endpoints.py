@@ -1,10 +1,13 @@
 # app/api/endpoints/ai_endpoints.py
+
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import openai
+from sqlalchemy.orm import Session
 from app.config.settings import get_settings
 from app.infrastructure.auth.auth_service import oauth2_scheme, AuthService
 from app.infrastructure.database.models import UserModel
+from app.api.dependencies import get_db  # Import the database dependency
 
 router = APIRouter()
 
@@ -12,25 +15,34 @@ class ChatRequestDTO(BaseModel):
     userQuery: str
 
 class ChatResponseDTO(BaseModel):
+    # The key "message" matches the expected JSON structure on the frontend.
     message: str
 
-# Revert to the original dependency (only token injection)
-def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
+def get_current_user(
+    token: str = Depends(oauth2_scheme), 
+    db: Session = Depends(get_db)
+) -> UserModel:
     """
-    Extracts the current user using AuthService. This function now
-    calls AuthService().get_current_user with only the token, so that the
-    internal dependency resolution in AuthService (for the database session)
-    is used.
+    Extract the current user using AuthService by passing both the token and an actual DB session.
+    This avoids the issue of receiving a Depends object instead of a real DB session.
     """
-    return AuthService().get_current_user(token=token)
+    return AuthService().get_current_user(token=token, db=db)
 
 @router.post("/chat", response_model=ChatResponseDTO)
 async def chat_v1(
     payload: ChatRequestDTO, 
     current_user: UserModel = Depends(get_current_user)
 ):
+    """
+    Receives a user query and returns an AI-generated response.
+    
+    Returns a JSON object with the key "message" to align with the frontend.
+    """
     try:
+        # Set the OpenAI API key from your settings.
         openai.api_key = get_settings().OPENAI_API_KEY
+
+        # Generate a chat completion using GPT-3.5-turbo.
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -39,7 +51,9 @@ async def chat_v1(
             ],
             temperature=0.7
         )
+        # Return the generated message.
         return {"message": response.choices[0].message.content}
+
     except Exception as exc:
         print("OpenAI Chat Error:", str(exc))
         raise HTTPException(status_code=500, detail="Chat error: " + str(exc))
