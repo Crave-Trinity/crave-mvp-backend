@@ -5,7 +5,6 @@
 #    FastAPI endpoint that returns a "message" key matching the frontend.
 #    Demonstrates SOLID, testable design, minimal but clear commentary.
 #======================================================================
-
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import openai
@@ -19,14 +18,13 @@ class ChatRequestDTO(BaseModel):
     userQuery: str
 
 class ChatResponseDTO(BaseModel):
-    # We deliberately use "message" to match the frontend's DTO
+    # The key "message" matches the expected JSON structure on the frontend.
     message: str
 
-# Dependency for extracting current user from token
+# Dependency for extracting the current user from the JWT token.
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
     """
-    Extracts the current user from JWT token via AuthService.
-    Ensures only authenticated requests access the chat endpoint.
+    Extract the current user using AuthService.
     """
     return AuthService().get_current_user(token=token)
 
@@ -36,14 +34,15 @@ async def chat_v1(
     current_user: UserModel = Depends(get_current_user)
 ):
     """
-    Receives a user query and returns an AI-generated response (ChatGPT).
-    The 'message' key is essential for aligning with the Swift client's decoding.
+    Receive a user query and return an AI-generated response.
+    
+    Returns a JSON object with a single key "message" to align with the frontend.
     """
     try:
-        # Use your actual OpenAI API key here
+        # Set the OpenAI API key from your settings.
         openai.api_key = get_settings().OPENAI_API_KEY
 
-        # Example: GPT-3.5-turbo chat completion
+        # Generate a chat completion using GPT-3.5-turbo.
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -52,7 +51,7 @@ async def chat_v1(
             ],
             temperature=0.7
         )
-        # Return exactly "message" in JSON
+        # Return the generated message.
         return {"message": response.choices[0].message.content}
 
     except Exception as exc:

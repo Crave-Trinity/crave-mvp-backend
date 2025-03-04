@@ -6,7 +6,6 @@
 #   - Retrieving current user from token with FastAPI dependencies
 # =============================================================================
 # File: app/infrastructure/auth/auth_service.py
-
 from datetime import datetime, timedelta
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -17,6 +16,7 @@ from app.config.settings import get_settings
 from app.infrastructure.database.session import get_db
 from app.infrastructure.database.models import UserModel
 
+# Load settings and configure OAuth2 token extraction.
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
@@ -49,16 +49,16 @@ class AuthService:
     ) -> UserModel:
         """
         Retrieve the current user based on the JWT token.
-
+        
         Raises:
-            HTTPException: If the token is invalid, expired, or the user doesn't exist.
+            HTTPException: If the token is missing, expired, or invalid,
+                           or if the user is not found or inactive.
         """
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing token in request",
             )
-
         try:
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             user_id = payload.get("sub")
@@ -67,7 +67,6 @@ class AuthService:
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token payload (no 'sub')"
                 )
-
             user = db.query(UserModel).filter(UserModel.id == user_id).first()
             if not user:
                 raise HTTPException(

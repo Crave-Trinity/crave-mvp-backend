@@ -1,7 +1,6 @@
 #====================================================
 # File: app/config/settings.py
 #====================================================
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
@@ -11,13 +10,15 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "CRAVE Trinity Backend"
     ENV: str = "development"
 
-    # Database configuration: prefer env variable or construct from components.
+    # DATABASE_URL: if set in environment, use it; otherwise, build it from individual components,
+    # or fallback to a local default.
     DATABASE_URL: str = Field(default_factory=lambda: Settings._get_database_url())
     @staticmethod
     def _get_database_url() -> str:
         url: Optional[str] = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
         if url:
             return url
+        # Build from individual PG settings if available.
         if all(key in os.environ for key in ["PGUSER", "PGPASSWORD", "PGHOST"]):
             user = os.environ["PGUSER"]
             password = os.environ["PGPASSWORD"]
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
             port = os.environ.get("PGPORT", "5432")
             dbname = os.environ.get("PGDATABASE", "railway")
             return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+        # Fallback for local development.
         return "postgresql://postgres:password@localhost:5432/crave_db"
 
     # External services and security settings.
