@@ -1,13 +1,14 @@
 # app/api/endpoints/ai_endpoints.py
-
+# app/api/endpoints/ai_endpoints.py
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import openai
 from sqlalchemy.orm import Session
+
 from app.config.settings import get_settings
 from app.infrastructure.auth.auth_service import oauth2_scheme, AuthService
 from app.infrastructure.database.models import UserModel
-from app.api.dependencies import get_db  # Import the database dependency
+from app.api.dependencies import get_db
 
 router = APIRouter()
 
@@ -15,16 +16,14 @@ class ChatRequestDTO(BaseModel):
     userQuery: str
 
 class ChatResponseDTO(BaseModel):
-    # The key "message" matches the expected JSON structure on the frontend.
     message: str
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme), 
+    token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> UserModel:
     """
-    Extract the current user using AuthService by passing both the token and an actual DB session.
-    This avoids the issue of receiving a Depends object instead of a real DB session.
+    Inject both the token and DB session, then use AuthService to get the current user.
     """
     return AuthService().get_current_user(token=token, db=db)
 
@@ -35,25 +34,28 @@ async def chat_v1(
 ):
     """
     Receives a user query and returns an AI-generated response.
-    
-    Returns a JSON object with the key "message" to align with the frontend.
+
+    Uses the new openai.chat.completions.create(...) function required for openai>=1.0.0.
     """
     try:
-        # Set the OpenAI API key from your settings.
+        # Use the new style of setting the API key
         openai.api_key = get_settings().OPENAI_API_KEY
 
-        # Generate a chat completion using GPT-3.5-turbo.
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        # NOTE: openai.ChatCompletion.create(...) is no longer valid in openai>=1.0.0
+        # Instead, do:
+        response = openai.chat.completions.create(
+            model="gpt-3.5-turbo",  # or whichever model you prefer
             messages=[
-                {"role": "system", "content": "You are a helpful AI assistant."},
-                {"role": "user", "content": payload.userQuery}
+                {"role": "user", "content": payload.userQuery},
             ],
-            temperature=0.7
+            temperature=0.7,
         )
-        # Return the generated message.
+
         return {"message": response.choices[0].message.content}
 
     except Exception as exc:
         print("OpenAI Chat Error:", str(exc))
-        raise HTTPException(status_code=500, detail="Chat error: " + str(exc))
+        raise HTTPException(
+            status_code=500,
+            detail="Chat error: " + str(exc)
+        )
