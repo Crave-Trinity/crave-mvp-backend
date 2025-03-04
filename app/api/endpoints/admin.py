@@ -10,10 +10,6 @@ from app.infrastructure.database.models import UserModel
 
 router = APIRouter()
 
-# ------------------------------------------------------------------
-# Admin Endpoints
-# ------------------------------------------------------------------
-
 @router.post("/stamp-db")
 def stamp_db():
     """
@@ -54,7 +50,7 @@ def generate_test_token(db: Session = Depends(get_db)):
             id=1,
             email="admin@example.com",
             username="admin",
-            password_hash="fakehash",  # NOTE: Replace with a proper hash in production!
+            password_hash="fakehash",  # Must match the 'password_hash' column
             is_active=True,
         )
         db.add(user)
