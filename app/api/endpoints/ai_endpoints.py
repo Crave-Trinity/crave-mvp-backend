@@ -1,16 +1,12 @@
-#======================================================================
-# File: app/api/endpoints/ai_endpoints.py
-# Directory: your_project/app/api/endpoints
-# Purpose:
-#    FastAPI endpoint that returns a "message" key matching the frontend.
-#    Demonstrates SOLID, testable design, minimal but clear commentary.
-#======================================================================
+# app/api/endpoints/ai_endpoints.py
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import openai
+from sqlalchemy.orm import Session
 from app.config.settings import get_settings
 from app.infrastructure.auth.auth_service import oauth2_scheme, AuthService
 from app.infrastructure.database.models import UserModel
+from app.api.dependencies import get_db  # Import the DB dependency
 
 router = APIRouter()
 
@@ -21,12 +17,16 @@ class ChatResponseDTO(BaseModel):
     # The key "message" matches the expected JSON structure on the frontend.
     message: str
 
-# Dependency for extracting the current user from the JWT token.
-def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
+def get_current_user(
+    token: str = Depends(oauth2_scheme), 
+    db: Session = Depends(get_db)  # Now we also inject the DB session
+) -> UserModel:
     """
-    Extract the current user using AuthService.
+    Extracts the current user using AuthService.
+    This revised function passes both the token and the actual DB session,
+    avoiding the error 'Depends object has no attribute "query"'.
     """
-    return AuthService().get_current_user(token=token)
+    return AuthService().get_current_user(token=token, db=db)
 
 @router.post("/chat", response_model=ChatResponseDTO)
 async def chat_v1(
@@ -34,9 +34,8 @@ async def chat_v1(
     current_user: UserModel = Depends(get_current_user)
 ):
     """
-    Receive a user query and return an AI-generated response.
-    
-    Returns a JSON object with a single key "message" to align with the frontend.
+    Receives a user query and returns an AI-generated response.
+    Returns a JSON object with the key "message" to align with the frontend.
     """
     try:
         # Set the OpenAI API key from your settings.
