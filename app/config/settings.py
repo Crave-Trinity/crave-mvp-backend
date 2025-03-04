@@ -1,6 +1,7 @@
 #====================================================
 # File: app/config/settings.py
 #====================================================
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "CRAVE Trinity Backend"
     ENV: str = "development"
 
-    # Database configuration: tries env variables first, falls back to a default.
+    # Database configuration: prefer env variable or construct from components.
     DATABASE_URL: str = Field(default_factory=lambda: Settings._get_database_url())
     @staticmethod
     def _get_database_url() -> str:
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
             return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
         return "postgresql://postgres:password@localhost:5432/crave_db"
 
-    # External service and security settings.
+    # External services and security settings.
     PINECONE_API_KEY: str = Field(...)
     PINECONE_ENV: str = Field(default="us-east-1-aws")
     PINECONE_INDEX_NAME: str = Field(default="crave-embeddings")

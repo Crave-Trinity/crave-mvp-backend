@@ -1,6 +1,7 @@
 #====================================================
 # File: app/api/dependencies.py
 #====================================================
+
 import os
 from typing import Generator
 from sqlalchemy import create_engine, text
@@ -16,12 +17,12 @@ from app.infrastructure.database.repository import (
 )
 from app.config.settings import get_settings
 
-# OAuth2 scheme to extract token from the "Authorization" header.
+# OAuth2 scheme for extracting the token from the Authorization header.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 def init_db() -> None:
     """
-    Initialize the database connection to ensure it's reachable.
+    Initialize and test the database connection.
     """
     engine = create_engine(
         get_settings().DATABASE_URL,
@@ -37,7 +38,7 @@ def init_db() -> None:
 
 def get_db() -> Generator[Session, None, None]:
     """
-    Provide a database session for a request and ensure it is closed afterward.
+    Create and yield a database session, ensuring it's closed afterwards.
     """
     db_settings = get_settings()
     engine = create_engine(
@@ -53,19 +54,19 @@ def get_db() -> Generator[Session, None, None]:
 
 def get_craving_repository(db: Session = Depends(get_db)) -> CravingRepository:
     """
-    Provide an instance of CravingRepository.
+    Provide an instance of the CravingRepository.
     """
     return CravingRepository(db)
 
 def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
     """
-    Provide an instance of UserRepository.
+    Provide an instance of the UserRepository.
     """
     return UserRepository(db)
 
 def get_voice_log_repository(db: Session = Depends(get_db)) -> VoiceLogRepository:
     """
-    Provide an instance of VoiceLogRepository.
+    Provide an instance of the VoiceLogRepository.
     """
     return VoiceLogRepository(db)
 
@@ -75,18 +76,18 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
 ) -> UserModel:
     """
-    Retrieve the currently authenticated user based on the JWT token.
-    
+    Retrieve the current authenticated user from the JWT token.
+
     Steps:
       1. Decode the token to extract the 'sub' claim.
-      2. Look up the user in the database by username or email.
-      3. Validate that the user exists and is active.
-    
+      2. Look up the user in the database (by username or email).
+      3. Ensure the user exists and is active.
+
     Returns:
         UserModel: The authenticated user.
-    
+
     Raises:
-        HTTPException: If the token is invalid or the user is not found/active.
+        HTTPException: For invalid or expired tokens, or if the user is not found/active.
     """
     settings = get_settings()
     credentials_exception = HTTPException(
@@ -103,7 +104,6 @@ async def get_current_user(
         raise credentials_exception
 
     user_repo = UserRepository(db)
-    # Try to find the user by username or email (whichever matches the 'sub' claim)
     user = user_repo.get_by_username(subject) or user_repo.get_by_email(subject)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

@@ -36,25 +36,25 @@ def add_missing_column():
 def generate_test_token(db: Session = Depends(get_db)):
     """
     Generate a test JWT token for development purposes.
-    
+
     Steps:
       1. Attempt to retrieve the admin user (with ID=1).
       2. If not found, create a minimal admin user.
       3. Generate a JWT using AuthService.generate_token.
       4. Return the token as JSON: {"token": "<jwt_token>"}.
-    
+
     Note: This endpoint should be used only in development.
     """
-    # Retrieve user with ID 1 (designated admin user)
+    # Retrieve the admin user (ID=1)
     user = db.query(UserModel).filter(UserModel.id == 1).first()
 
-    # If the admin user does not exist, create one with default values.
+    # If the admin user doesn't exist, create one with default values.
     if not user:
         user = UserModel(
             id=1,
             email="admin@example.com",
             username="admin",
-            hashed_password="fakehash",  # Use a proper hash for production!
+            password_hash="fakehash",  # NOTE: Replace with a proper hash in production!
             is_active=True,
         )
         db.add(user)

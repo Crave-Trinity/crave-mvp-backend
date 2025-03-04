@@ -18,14 +18,24 @@ from app.infrastructure.database.session import get_db
 from app.infrastructure.database.models import UserModel
 
 settings = get_settings()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 class AuthService:
     def generate_token(self, user_id: int, email: str) -> str:
+        """
+        Generate a JWT token for the given user.
+        
+        Args:
+            user_id (int): The user's ID.
+            email (str): The user's email.
+        
+        Returns:
+            str: The generated JWT token.
+        """
         expires_delta = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         expire = datetime.utcnow() + expires_delta
         payload = {
-            "sub": str(user_id),
+            "sub": str(user_id),  # Store user ID as a string for consistency.
             "email": email,
             "exp": expire,
             "iat": datetime.utcnow(),
@@ -37,6 +47,12 @@ class AuthService:
         token: str = Depends(oauth2_scheme),
         db: Session = Depends(get_db),
     ) -> UserModel:
+        """
+        Retrieve the current user based on the JWT token.
+
+        Raises:
+            HTTPException: If the token is invalid, expired, or the user doesn't exist.
+        """
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,11 +60,7 @@ class AuthService:
             )
 
         try:
-            payload = jwt.decode(
-                token,
-                settings.JWT_SECRET,
-                algorithms=[settings.JWT_ALGORITHM]
-            )
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             user_id = payload.get("sub")
             if user_id is None:
                 raise HTTPException(
