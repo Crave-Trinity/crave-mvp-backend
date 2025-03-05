@@ -15,6 +15,9 @@ branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
+    # Ensure the pgcrypto extension is enabled for gen_random_uuid()
+    op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+    
     # Convert existing `intensity` column to float
     op.alter_column(
         "cravings",
@@ -30,7 +33,7 @@ def upgrade() -> None:
         "craving_uuid",
         postgresql.UUID(as_uuid=True),
         nullable=False,
-        server_default=sa.text("gen_random_uuid()")  # or uuid_generate_v4() if extension enabled
+        server_default=sa.text("gen_random_uuid()")
     ))
     op.create_unique_constraint("uq_cravings_craving_uuid", "cravings", ["craving_uuid"])
     op.create_index("ix_cravings_craving_uuid", "cravings", ["craving_uuid"])
@@ -41,14 +44,14 @@ def upgrade() -> None:
     op.add_column("cravings", sa.Column(
         "timestamp",
         sa.DateTime(timezone=True),
-        nullable=True,  # temporarily
+        nullable=True,  # temporarily allow null
         server_default=sa.text("now()")
     ))
 
-    # Backfill timestamp
+    # Backfill timestamp for existing rows
     op.execute("UPDATE cravings SET timestamp = created_at WHERE timestamp IS NULL")
 
-    # Make non-null
+    # Alter column to be non-nullable now that data is present
     op.alter_column("cravings", "timestamp", nullable=False)
 
 def downgrade() -> None:
