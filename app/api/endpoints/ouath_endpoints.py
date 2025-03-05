@@ -1,4 +1,4 @@
-#app/api/endpoints/oauth_endpoints.py
+# File: app/api/endpoints/oauth_endpoints.py
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
