@@ -1,50 +1,52 @@
+#====================================================
 # File: app/core/services/voice_logs_service.py
+#====================================================
 
 import os
 from datetime import datetime
 from uuid import uuid4
 from typing import Optional
 
+# Import the VoiceLog domain entity
 from app.core.entities.voice_log import VoiceLog
-from app.infrastructure.database.voice_logs_repository import VoiceLogsRepository
 
-# ------------------------------------------------------------------
+# CHANGED: Import the correct VoiceLogRepository (singular) from its file,
+# instead of the incorrect VoiceLogsRepository.
+from app.infrastructure.database.voice_logs_repository import VoiceLogRepository
+
 # Define a persistent uploads directory.
-#
-# We want to store files in the "uploads" folder under the "app" directory.
-# The relative path is computed by going up three directories from this file:
-#   __file__ is at "app/core/services/voice_logs_service.py"
-#   os.path.dirname(os.path.dirname(os.path.dirname(...))) gives "app"
-# Then we join "uploads" to that path.
-# ------------------------------------------------------------------
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "uploads")
-os.makedirs(UPLOAD_DIR, exist_ok=True)  # Ensure the uploads directory exists
+UPLOAD_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+    "uploads"
+)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 class VoiceLogsService:
     """
-    Encapsulates voice log business logic: storing the file, creating a VoiceLog record,
-    and orchestrating transcription steps.
+    Encapsulates voice log business logic:
+      - Storing the audio file
+      - Creating a VoiceLog record
+      - Orchestrating transcription steps
     """
 
-    def __init__(self, repo: VoiceLogsRepository):
+    def __init__(self, repo: VoiceLogRepository):
+        # Dependency injection of the repository for database operations.
         self.repo = repo
 
     def upload_new_voice_log(self, user_id: int, audio_bytes: bytes) -> VoiceLog:
         """
-        Handle the creation of a new voice log:
-          1. Generate a unique file path in a persistent uploads directory.
-          2. Write audio_bytes to persistent storage.
-          3. Create and persist a VoiceLog domain entity with 'PENDING' status.
+        1. Generate a unique file path in a persistent uploads directory.
+        2. Write the uploaded audio bytes to persistent storage.
+        3. Create and persist a VoiceLog domain entity with 'PENDING' status.
         """
-        # Generate a unique file name and full path within the persistent uploads folder.
         file_name = f"voice_{user_id}_{uuid4()}.wav"
         file_path = os.path.join(UPLOAD_DIR, file_name)
 
-        # Write the uploaded audio bytes to the file.
+        # Write the audio file to disk.
         with open(file_path, "wb") as f:
             f.write(audio_bytes)
 
-        # Create the domain entity with the persistent file path.
+        # Create the VoiceLog domain entity.
         voice_log = VoiceLog(
             user_id=user_id,
             file_path=file_path,
@@ -74,3 +76,16 @@ class VoiceLogsService:
             record.transcription_status = "COMPLETED"
             return self.repo.update(record)
         return None
+
+    def get_voice_log(self, voice_log_id: int) -> Optional[VoiceLog]:
+        """
+        Retrieve a voice log by its ID.
+        """
+        return self.repo.get_by_id(voice_log_id)
+
+    def process_transcription(self, voice_log_id: int) -> None:
+        """
+        Placeholder for background transcription processing logic.
+        """
+        # Implement your asynchronous transcription processing here.
+        pass
