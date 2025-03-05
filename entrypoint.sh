@@ -1,5 +1,9 @@
 #!/bin/bash
-set -e
+# entrypoint.sh - Entry script for Docker container startup.
+# This script detects Railway environment variables,
+# runs database migrations, and finally starts the uvicorn server.
+
+set -e  # Exit immediately if a command exits with a non-zero status
 
 echo "==== RAILWAY ENV DETECT ===="
 if [[ -n "$RAILWAY_SERVICE_NAME" || -n "$RAILWAY_ENVIRONMENT_NAME" ]]; then
@@ -13,21 +17,16 @@ echo "==== DB ENV VARS ===="
 env | grep -i -E "sql|db|postgres|pg" | sort || echo "(none found)"
 echo "====================="
 
+# Set DATABASE_URL if not already set
 export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@db:5432/crave_db}"
 echo "Using DATABASE_URL: ${DATABASE_URL:0:60}..."
 
 echo "Running Alembic migrations..."
 alembic upgrade head
 
-exec uvicorn app.api.main:app --host 0.0.0.0 --port "${PORT:-8000}"
+# Optional: Pause briefly to ensure the server is ready before Railway healthchecks start.
+echo "Sleeping 5 seconds to allow server startup..."
+sleep 5
 
-# The following lines are removed:
-# (
-#   echo "Starting minimal health check responder on port 8081..."
-#   while true; do
-#     echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"ok\"}" \
-#       | nc -l -p 8081 -q 1 || true
-#   done
-# ) &
-# HEALTH_PID=$!
-# kill $HEALTH_PID
+# Launch uvicorn with host and port provided by Railway (or default 8000)
+exec uvicorn app.api.main:app --host 0.0.0.0 --port "${PORT:-8000}"
