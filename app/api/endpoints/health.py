@@ -4,23 +4,23 @@
 """
 Health endpoint for CRAVE Trinity Backend.
 This endpoint is used by Railway to verify that the service is up.
-We've explicitly added both GET and HEAD handlers and disabled
-automatic trailing slash redirection so that Railway's healthcheck
-receives a 200 OK response without any redirects.
+We explicitly handle both the empty path ("") and the "/" path within the mounted router,
+so that both "/api/health" and "/api/health/" return 200 OK.
+Additionally, HEAD requests are supported for both paths.
 """
 
 from fastapi import APIRouter
 from datetime import datetime
 
-# Disable automatic trailing slash redirection
+# Disable automatic trailing slash redirection to control routing explicitly.
 router = APIRouter(redirect_slashes=False)
 
-# Explicit GET handler for the health check.
-@router.get("/", tags=["Health"])
-def health_check_get():
+# GET handler for requests to "/api/health" (empty path after mounting).
+@router.get("", tags=["Health"])
+def health_check_empty_get():
     """
-    GET health check endpoint returning JSON with status, timestamp, and version.
-    Accessible via both "/api/health" and "/api/health/".
+    GET health check for empty path.
+    This handles requests made to "/api/health" (without a trailing slash).
     """
     return {
         "status": "ok",
@@ -29,11 +29,34 @@ def health_check_get():
         "version": "0.1.0"
     }
 
-# Explicit HEAD handler for the health check.
-@router.head("/", tags=["Health"])
-def health_check_head():
+# GET handler for requests to "/api/health/".
+@router.get("/", tags=["Health"])
+def health_check_slash_get():
     """
-    HEAD health check endpoint returning an empty body.
-    This ensures that if Railway sends a HEAD request, it receives a 200 OK.
+    GET health check for slash path.
+    This handles requests made to "/api/health/" (with a trailing slash).
+    """
+    return {
+        "status": "ok",
+        "service": "CRAVE Trinity Backend",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "0.1.0"
+    }
+
+# HEAD handler for requests to "/api/health" (empty path).
+@router.head("")
+def health_check_empty_head():
+    """
+    HEAD health check for empty path.
+    Ensures that a HEAD request to "/api/health" returns 200 OK.
+    """
+    return {}
+
+# HEAD handler for requests to "/api/health/".
+@router.head("/")
+def health_check_slash_head():
+    """
+    HEAD health check for slash path.
+    Ensures that a HEAD request to "/api/health/" returns 200 OK.
     """
     return {}
