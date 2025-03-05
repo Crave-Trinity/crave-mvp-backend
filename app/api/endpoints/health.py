@@ -4,21 +4,23 @@
 """
 Health endpoint for CRAVE Trinity Backend.
 This endpoint is used by Railway to verify that the service is up.
-We disable automatic trailing slash redirection to ensure Railway’s healthcheck
-receives a 200 OK response without triggering a redirect.
+We've explicitly added both GET and HEAD handlers and disabled
+automatic trailing slash redirection so that Railway's healthcheck
+receives a 200 OK response without any redirects.
 """
 
 from fastapi import APIRouter
 from datetime import datetime
 
-# Disable redirect_slashes to avoid automatic 307 redirects when the trailing slash is missing.
+# Disable automatic trailing slash redirection
 router = APIRouter(redirect_slashes=False)
 
+# Explicit GET handler for the health check.
 @router.get("/", tags=["Health"])
-def health_check():
+def health_check_get():
     """
-    Health check endpoint returning JSON with status, timestamp, and version.
-    With redirect_slashes disabled, both "/api/health" and "/api/health/" will match this endpoint.
+    GET health check endpoint returning JSON with status, timestamp, and version.
+    Accessible via both "/api/health" and "/api/health/".
     """
     return {
         "status": "ok",
@@ -26,3 +28,12 @@ def health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "version": "0.1.0"
     }
+
+# Explicit HEAD handler for the health check.
+@router.head("/", tags=["Health"])
+def health_check_head():
+    """
+    HEAD health check endpoint returning an empty body.
+    This ensures that if Railway sends a HEAD request, it receives a 200 OK.
+    """
+    return {}
