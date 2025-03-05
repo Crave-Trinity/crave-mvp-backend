@@ -2,27 +2,25 @@
 # File: app/api/endpoints/health.py
 #====================================================
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 from datetime import datetime
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
-@router.get("/", tags=["Health"])
+# Only one explicit path to avoid confusion
+@router.get("/")
 def health_check():
-    """
-    Health check endpoint for Railway and monitoring.
-    This explicitly responds at '/api/health/'.
-    """
-    return JSONResponse(status_code=200, content={
-        "status": "ok",
-        "service": "CRAVE Trinity Backend",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "1.0.0"
-    })
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "ok",
+            "service": "CRAVE Trinity Backend",
+            "timestamp": datetime.utcnow().isoformat(),
+            "version": "1.0"
+        }
+    )
 
-@router.head("/", tags=["Health"])
+# Explicit HEAD request handler
+@router.head("/")
 def health_check_head():
-    """
-    Head method health check endpoint, explicitly returns 200.
-    """
     return JSONResponse(status_code=200, content=None)
