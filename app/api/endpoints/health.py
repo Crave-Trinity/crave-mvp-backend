@@ -2,13 +2,12 @@
 # File: app/api/endpoints/health.py
 #====================================================
 from fastapi import APIRouter
-from datetime import datetime
 from fastapi.responses import JSONResponse
+from datetime import datetime
 
 router = APIRouter()
 
-# Only one explicit path to avoid confusion
-@router.get("/")
+@router.get("")  # EXACTLY ONE route, no trailing slash
 def health_check():
     return JSONResponse(
         status_code=200,
@@ -16,11 +15,10 @@ def health_check():
             "status": "ok",
             "service": "CRAVE Trinity Backend",
             "timestamp": datetime.utcnow().isoformat(),
-            "version": "1.0"
+            "version": "1.0.0"
         }
     )
 
-# Explicit HEAD request handler
-@router.head("/")
+@router.head("")  # Optional, explicitly good practice for HEAD requests
 def health_check_head():
     return JSONResponse(status_code=200, content=None)
