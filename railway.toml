@@ -1,27 +1,28 @@
-# File: railway.toml (CORRECTED)
-# Purpose: Configure Railway deployment behavior
+# railway.toml - Railway deployment configuration for CRAVE Trinity Backend.
 
 [environments]
   [environments.production]
-    # Always route through HTTPS
+    # Always enforce HTTPS in production
     https_only = true
 
   [environments.production.build]
-    # Build using Dockerfile
+    # Use the Dockerfile to build the image.
     builder = "dockerfile"
-    # Optional: Notify on build failures
-    # buildCommand = "curl -s -X POST $WEBHOOK_URL -d 'Build $RAILWAY_SERVICE_NAME $RAILWAY_ENVIRONMENT_NAME $RAILWAY_GIT_COMMIT_SHA'"
+    # (Optional) Add a build command for notifications if desired.
 
   [environments.production.deploy]
-    # Deploy with these specific settings
+    # The command to start your container.
     startCommand = "./entrypoint.sh"
-    healthcheckPath = "/api/health"  # CHANGED: Correct health check path
+    # Health check path must match the FastAPI health endpoint.
+    healthcheckPath = "/api/health"
     healthcheckTimeout = 10
 
 [deploy]
-  # General deployment settings
+  # General deployment settings for all environments.
   numReplicas = 1
-  healthcheckPath = "/api/health"  # CHANGED: Correct health check path
+  healthcheckPath = "/api/health"
   healthcheckTimeout = 10
 
-# Remember to create a /health endpoint in your FastAPI app!
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
