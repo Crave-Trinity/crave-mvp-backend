@@ -50,4 +50,16 @@ app.include_router(ai_router, prefix="/ai", tags=["AI"])
 app.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 app.include_router(craving_logs_router, prefix="", tags=["Cravings"])
 app.include_router(live_updates_router, prefix="/live", tags=["LiveUpdates"])
-app.include_router(search_cr
+app.include_router(search_cravings_router, prefix="/search", tags=["CravingsSearch"])
+app.include_router(user_queries_router, prefix="/queries", tags=["UserQueries"])
+app.include_router(voice_logs_endpoints_router, prefix="/voice-logs", tags=["VoiceLogs"])
+app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancement", tags=["VoiceLogsEnhancement"])
+
+# Root endpoint explicitly provided for quick sanity check
+@app.get("/", tags=["Root"])
+def read_root():
+    return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
+
+# Development server explicitly defined for local debugging and testing
+if __name__ == "__main__":
+    uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
