@@ -1,6 +1,7 @@
 #====================================================
 # File: app/api/dependencies.py
 #====================================================
+
 import os
 from typing import Generator
 from sqlalchemy import create_engine, text
@@ -8,21 +9,23 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from app.infrastructure.database.models import UserModel
+
+# Note: We removed VoiceLogRepository from this import
+#       because it's now imported from voice_logs_repository.py
 from app.infrastructure.database.repository import (
     CravingRepository,
     UserRepository,
-    VoiceLogRepository,
 )
+
+# CHANGED: Import VoiceLogRepository from its actual file
+from app.infrastructure.database.voice_logs_repository import VoiceLogRepository
+
+from app.infrastructure.database.models import UserModel
 from app.config.settings import get_settings
 
-# OAuth2 scheme to extract the token from the "Authorization" header.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 def init_db() -> None:
-    """
-    Initialize the database connection to ensure it's reachable.
-    """
     engine = create_engine(
         get_settings().DATABASE_URL,
         connect_args={"sslmode": "require"} if "railway" in get_settings().DATABASE_URL else {},
@@ -36,9 +39,6 @@ def init_db() -> None:
         print("Error establishing database connection:", e)
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    Create and yield a database session, and ensure it is closed afterward.
-    """
     db_settings = get_settings()
     engine = create_engine(
         db_settings.DATABASE_URL,
@@ -52,21 +52,13 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 def get_craving_repository(db: Session = Depends(get_db)) -> CravingRepository:
-    """
-    Provide an instance of CravingRepository.
-    """
     return CravingRepository(db)
 
 def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
-    """
-    Provide an instance of UserRepository.
-    """
     return UserRepository(db)
 
+# CHANGED: Now references VoiceLogRepository from voice_logs_repository.py
 def get_voice_log_repository(db: Session = Depends(get_db)) -> VoiceLogRepository:
-    """
-    Provide an instance of VoiceLogRepository.
-    """
     return VoiceLogRepository(db)
 
 async def get_current_user(
@@ -74,20 +66,6 @@ async def get_current_user(
     db: Session = Depends(get_db),
     token: str = Depends(oauth2_scheme),
 ) -> UserModel:
-    """
-    Retrieve the currently authenticated user from the JWT token.
-    
-    Steps:
-      1. Decode the token to extract the 'sub' claim.
-      2. Look up the user in the database (by username or email).
-      3. Ensure the user exists and is active.
-    
-    Returns:
-        UserModel: The authenticated user.
-    
-    Raises:
-        HTTPException: If the token is invalid, expired, or if the user is not found/active.
-    """
     settings = get_settings()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
