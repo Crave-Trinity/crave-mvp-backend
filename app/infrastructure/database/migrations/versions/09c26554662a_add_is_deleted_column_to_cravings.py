@@ -1,5 +1,3 @@
-#app/infrastructure/database/migrations/versions/09c26554662a_add_is_deleted_column_to_cravings.py
-
 """
 Add is_deleted column to cravings
 
@@ -7,7 +5,6 @@ Revision ID: 09c26554662a
 Revises: 200c7d532370
 Create Date: 2025-02-25 16:53:36.946176
 """
-
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa

@@ -1,187 +1,186 @@
+# app/api/endpoints/craving_logs.py
 """
-File: crave_trinity-backend/app/api/endpoints/craving_logs.py
-Description: This module defines the API endpoints for handling cravings, including creation, listing,
-retrieval by ID, and semantic search functionalities. It follows clean code practices and integrates with
-the repository and use-case layers for data processing.
+File: craving_logs.py
+Description: Defines the API endpoints for handling cravings, 
+including creation, listing, and retrieval, matching the front-end CravingEntity.
 """
 
 from datetime import datetime
 from typing import List, Optional
+from uuid import UUID as pyUUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-# Import dependencies and use cases
 from app.api.dependencies import get_db
-from app.core.use_cases.ingest_craving import IngestCravingInput, ingest_craving
-from app.core.use_cases.search_cravings import SearchCravingsInput, search_cravings
 from app.infrastructure.database.repository import CravingRepository
+from app.infrastructure.database.models import CravingModel
 
 router = APIRouter()
 
-# =============================================================================
-# Request/Response Models
-# =============================================================================
+
+# -------------------------------------------------------------------------
+# REQUEST/RESPONSE MODELS
+# -------------------------------------------------------------------------
 
 class CreateCravingRequest(BaseModel):
     """
-    Request model for creating a new craving entry.
+    Matches front-end's CravingEntity:
+    - id (UUID)
+    - cravingDescription (String)
+    - cravingStrength (Double)
+    - confidenceToResist (Double)
+    - emotions ([String])
+    - timestamp (DateTime, ideally ISO8601)
+    - isArchived (Bool)
+    user_id is also needed, but not in front-end model. 
     """
-    user_id: int = Field(..., example=1, description="The user ID logging the craving")
-    description: str = Field(..., example="Sudden urge for chocolate", description="Description of the craving")
-    intensity: int = Field(..., ge=1, le=10, example=7, description="Intensity on a scale of 1-10")
-    
-    @validator('intensity')
-    def validate_intensity(cls, v):
-        if v < 1 or v > 10:
-            raise ValueError('Intensity must be between 1 and 10')
-        return v
+    id: Optional[pyUUID] = Field(None, description="UUID from front end if available")
+    user_id: int = Field(..., description="User ID logging the craving")
+    cravingDescription: str
+    cravingStrength: float
+    confidenceToResist: float
+    emotions: List[str] = Field(default_factory=list)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    isArchived: bool = False
+
 
 class CravingResponse(BaseModel):
     """
-    Response model for individual craving data.
+    Response model that maps exactly to front-end's CravingEntity.
     """
-    id: int = Field(..., description="The unique identifier of the craving")
-    user_id: int = Field(..., description="The user who logged the craving")
-    description: str = Field(..., description="Description of the craving")
-    intensity: int = Field(..., description="Intensity of the craving")
-    created_at: datetime = Field(..., description="Timestamp when the craving was created")
-    model_config = ConfigDict(from_attributes=True)
+    id: pyUUID
+    user_id: int
+    cravingDescription: str
+    cravingStrength: float
+    confidenceToResist: float
+    emotions: List[str]
+    timestamp: datetime
+    isArchived: bool
 
-    
+
 class CravingListResponse(BaseModel):
     """
-    Response model for a list of cravings.
+    Response model for listing cravings.
     """
     cravings: List[CravingResponse]
-    count: int = Field(..., description="Total number of cravings")
-    model_config = ConfigDict(from_attributes=True)
-
-
-class SearchResult(BaseModel):
-    """
-    Model for a single search result.
-    """
-    id: int
-    description: str
-    intensity: int
-    created_at: datetime
-    similarity: float = Field(..., description="Similarity score to the query")
-    model_config = ConfigDict(from_attributes=True)
-
-
-class SearchResponse(BaseModel):
-    """
-    Response model for search results.
-    """
-    results: List[SearchResult]
-    query: str
     count: int
-    model_config = ConfigDict(from_attributes=True)
 
-
-# =============================================================================
-# API Endpoints
-# =============================================================================
 
 @router.post("/cravings", response_model=CravingResponse, tags=["Cravings"])
-async def create_craving(request: CreateCravingRequest, db: Session = Depends(get_db)):
+async def create_craving(
+    request: CreateCravingRequest,
+    db: Session = Depends(get_db)
+):
     """
-    Create a new craving entry.
-    
-    Logs a user's craving (description and intensity) to the database.
-    
-    Returns:
-        CravingResponse: The created craving, including its ID and timestamp.
+    Create a new craving entry that aligns with the front end's CravingEntity.
     """
     try:
         repo = CravingRepository(db)
-        input_dto = IngestCravingInput(
+
+        # If the front end provided an ID, use that. Otherwise, generate server-side.
+        craving_uuid = request.id or pyUUID(hex="".join(str(datetime.utcnow().timestamp()).split(".")))
+
+        new_craving = CravingModel(
+            craving_uuid=craving_uuid,
             user_id=request.user_id,
-            description=request.description,
-            intensity=request.intensity
+            description=request.cravingDescription,
+            intensity=request.cravingStrength,
+            confidence_to_resist=request.confidenceToResist,
+            emotions=request.emotions,
+            timestamp=request.timestamp,
+            is_archived=request.isArchived,
+            is_deleted=False
         )
-        output = ingest_craving(input_dto, repo)
-        return CravingResponse(**output.__dict__)
+        db.add(new_craving)
+        db.commit()
+        db.refresh(new_craving)
+
+        return CravingResponse(
+            id=new_craving.craving_uuid,
+            user_id=new_craving.user_id,
+            cravingDescription=new_craving.description,
+            cravingStrength=new_craving.intensity,
+            confidenceToResist=new_craving.confidence_to_resist or 0.0,
+            emotions=new_craving.emotions or [],
+            timestamp=new_craving.timestamp,
+            isArchived=new_craving.is_archived
+        )
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to create craving: {str(e)}")
 
-@router.get("/cravings/search", response_model=SearchResponse, tags=["Cravings"])
-async def search_cravings_endpoint(
-    user_id: int = Query(..., description="User ID to search cravings for"),
-    query_text: str = Query(..., description="Text to search for in cravings"),
-    top_k: int = Query(5, ge=1, le=100, description="Number of results to return")
+
+@router.get("/cravings/{craving_uuid}", response_model=CravingResponse, tags=["Cravings"])
+async def get_craving(
+    craving_uuid: pyUUID = Path(..., description="The UUID of the craving to retrieve"),
+    db: Session = Depends(get_db)
 ):
     """
-    Search for cravings using semantic similarity.
-    
-    Leverages vector embeddings to find cravings similar to the provided query text.
-    This powers the RAG (Retrieval-Augmented Generation) component of the system.
-    
-    Returns:
-        SearchResponse: A list of similar cravings with their similarity scores.
+    Retrieve a single craving by its UUID.
     """
     try:
-        input_dto = SearchCravingsInput(
-            user_id=user_id,
-            query_text=query_text,
-            top_k=top_k
+        repo = CravingRepository(db)
+        craving = db.query(CravingModel).filter(
+            CravingModel.craving_uuid == craving_uuid,
+            CravingModel.is_deleted == False
+        ).first()
+
+        if not craving:
+            raise HTTPException(status_code=404, detail=f"Craving with UUID {craving_uuid} not found")
+
+        return CravingResponse(
+            id=craving.craving_uuid,
+            user_id=craving.user_id,
+            cravingDescription=craving.description,
+            cravingStrength=craving.intensity,
+            confidenceToResist=craving.confidence_to_resist or 0.0,
+            emotions=craving.emotions or [],
+            timestamp=craving.timestamp,
+            isArchived=craving.is_archived
         )
-        results = search_cravings(input_dto)
-        return SearchResponse(
-            results=[SearchResult(**r.__dict__) for r in results],
-            query=query_text,
-            count=len(results)
-        )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/cravings", response_model=CravingListResponse, tags=["Cravings"])
 async def list_cravings(
-    user_id: int = Query(..., description="User ID to filter cravings"),
-    skip: int = Query(0, ge=0, description="Number of cravings to skip"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of cravings to return"),
+    user_id: int = Query(..., description="Filter by user ID"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1),
     db: Session = Depends(get_db)
 ):
     """
-    List cravings for a specific user with pagination.
-    
-    Retrieves a paginated list of cravings for the provided user ID.
-    
-    Returns:
-        CravingListResponse: A list of cravings along with the total count.
+    Paginated list of cravings for the specified user.
     """
     try:
         repo = CravingRepository(db)
-        cravings = repo.get_cravings_for_user(user_id, skip, limit)
-        count = repo.count_cravings_for_user(user_id)
-        return CravingListResponse(
-            cravings=[CravingResponse(**c.__dict__) for c in cravings],
-            count=count
+        query = db.query(CravingModel).filter(
+            CravingModel.user_id == user_id,
+            CravingModel.is_deleted == False
         )
+        cravings = query.offset(skip).limit(limit).all()
+        count = query.count()
+
+        craving_responses = []
+        for c in cravings:
+            craving_responses.append(
+                CravingResponse(
+                    id=c.craving_uuid,
+                    user_id=c.user_id,
+                    cravingDescription=c.description,
+                    cravingStrength=c.intensity,
+                    confidenceToResist=c.confidence_to_resist or 0.0,
+                    emotions=c.emotions or [],
+                    timestamp=c.timestamp,
+                    isArchived=c.is_archived
+                )
+            )
+
+        return CravingListResponse(cravings=craving_responses, count=count)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list cravings: {str(e)}")
-
-@router.get("/cravings/{craving_id}", response_model=CravingResponse, tags=["Cravings"])
-async def get_craving(
-    craving_id: int = Path(..., description="ID of the craving to retrieve"),
-    db: Session = Depends(get_db)
-):
-    """
-    Retrieve a specific craving by its ID.
-    
-    Returns detailed information about a single craving.
-    
-    Returns:
-        CravingResponse: The craving details.
-    """
-    try:
-        repo = CravingRepository(db)
-        craving = repo.get_craving_by_id(craving_id)
-        if not craving:
-            raise HTTPException(status_code=404, detail=f"Craving with ID {craving_id} not found")
-        return CravingResponse(**craving.__dict__)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve craving: {str(e)}")

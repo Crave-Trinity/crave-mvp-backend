@@ -1,4 +1,3 @@
-#/app/infrastructure/database/migrations/versions/200c7d532370_initial_tables_users_cravings.py
 """
 Initial tables: users & cravings
 
@@ -6,7 +5,6 @@ Revision ID: 200c7d532370
 Revises:
 Create Date: 2025-02-22 21:32:31.338366
 """
-
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa

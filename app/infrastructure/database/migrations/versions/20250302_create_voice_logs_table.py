@@ -5,7 +5,6 @@ Revision ID: 20250302_create_voice_logs_table
 Revises: 20250301_add_disp_avatar
 Create Date: 2025-03-02 12:00:00
 """
-
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
@@ -14,7 +13,6 @@ revision: str = "20250302_create_voice_logs_table"
 down_revision: Union[str, None] = "20250301_add_disp_avatar"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
 
 def upgrade() -> None:
     op.create_table(
@@ -27,11 +25,8 @@ def upgrade() -> None:
         sa.Column("transcription_status", sa.String, nullable=True),
         sa.Column("is_deleted", sa.Boolean, server_default="false", nullable=False),
     )
-    # Use raw SQL to create the index only if it does not already exist.
     op.execute('CREATE INDEX IF NOT EXISTS "ix_voice_logs_user_id" ON voice_logs ("user_id")')
 
-
 def downgrade() -> None:
-    # Drop the index if it exists.
     op.execute('DROP INDEX IF EXISTS "ix_voice_logs_user_id"')
     op.drop_table("voice_logs")
