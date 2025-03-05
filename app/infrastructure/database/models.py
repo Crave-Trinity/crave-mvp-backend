@@ -14,21 +14,20 @@ from sqlalchemy.dialects.postgresql import UUID, JSON
 
 Base = declarative_base()
 
+# Database model representing a user's craving entry
 class CravingModel(Base):
     __tablename__ = "cravings"
 
     id = Column(Integer, primary_key=True, index=True)
-    # The front-end wants a UUID for "id". We'll store it here:
     craving_uuid = Column(UUID(as_uuid=True), unique=True, index=True, nullable=False)
 
     user_id = Column(Integer, nullable=False)
     description = Column(String, nullable=False)
-    intensity = Column(Float, nullable=False)  # float/double
+    intensity = Column(Float, nullable=False)
     confidence_to_resist = Column(Float, nullable=True)
     emotions = Column(JSON, nullable=True)
     is_archived = Column(Boolean, default=False, nullable=False)
 
-    # The front-end calls it `timestamp`; we store it as a datetime
     timestamp = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
 
     is_deleted = Column(Boolean, default=False, nullable=False)
@@ -36,15 +35,21 @@ class CravingModel(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow,
                         onupdate=datetime.datetime.utcnow, nullable=False)
 
+# Database model representing application users (regular and OAuth users)
 class UserModel(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)  # OAuth users don't need passwords
     username = Column(String, nullable=True)
     display_name = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
+
+    # OAuth-specific fields clearly indicating provider source
+    oauth_provider = Column(String, nullable=True)
+    picture = Column(String, nullable=True)  # Profile picture URL from OAuth provider
+
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow,
                         onupdate=datetime.datetime.utcnow, nullable=False)
@@ -54,7 +59,7 @@ class UserModel(Base):
     def __repr__(self):
         return f"<UserModel id={self.id} email={self.email}>"
 
-
+# Database model for voice log entries (user-uploaded audio logs)
 class VoiceLogModel(Base):
     __tablename__ = "voice_logs"
 
