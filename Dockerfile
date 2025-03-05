@@ -1,17 +1,15 @@
-# ------------------------------------------------------------------------------
-# Dockerfile (Corrected, Uses Separate entrypoint.sh)
-# ------------------------------------------------------------------------------
+# Dockerfile - Build instructions for CRAVE Trinity Backend.
 
-# Base Python image
+# Use a lightweight Python 3.11 image.
 FROM python:3.11-slim
 
-# Prevents Python from buffering stdout/stderr
+# Ensure Python output is sent straight to the terminal without buffering.
 ENV PYTHONUNBUFFERED=1
 
-# Set workdir
+# Set the working directory in the container.
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies: networking, build tools, PostgreSQL client libraries, dos2unix.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
     build-essential \
@@ -19,19 +17,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# Copy the requirements file and install Python dependencies.
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your code
+# Copy the entire application code into the container.
 COPY . /app/
 
-# Copy entrypoint script and make it executable
+# Copy the entrypoint script into the container and ensure it's Unix-formatted and executable.
 COPY entrypoint.sh /app/entrypoint.sh
 RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Expose port 8000 (your FastAPI default)
+# Expose the port that uvicorn will run on.
 EXPOSE 8000
 
-# Use the entrypoint script
+# Set the entrypoint to the shell script.
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
