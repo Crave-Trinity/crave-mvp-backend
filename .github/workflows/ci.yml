@@ -1,7 +1,6 @@
 name: CI Pipeline
 
 on:
-  # Run the pipeline on every push and pull request to main. Adjust as needed.
   push:
     branches: [ "main" ]
   pull_request:
@@ -9,82 +8,55 @@ on:
 
 jobs:
   test-and-build:
-    # Use the latest Ubuntu runner.
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the code from GitHub.
       - name: Check out code
         uses: actions/checkout@v3
 
-      # 2. Set up Python for linting and testing.
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # 3. Install Python dependencies for testing.
-      #    We skip Docker at this point; we just want to run pytest (or any other tests).
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          # Optionally install flake8, black, mypy, or isort for linting and type checks.
 
-      # 4. (Optional) Run flake8 or black for code quality checks.
       - name: Lint code with flake8
         run: |
           pip install flake8
           flake8 --max-line-length=88 .
-        # If you don't want linting, remove or comment out this step.
 
-      # 5. Run unit tests (pytest).
       - name: Run tests
         run: |
           pytest --maxfail=1 --disable-warnings -q
 
-      # 6. Build the Docker image. This ensures your Dockerfile works.
       - name: Build Docker image
         run: |
           docker build -t crave-mvp-backend:ci-test .
 
-      # 7. Spin up the container in the background for a quick smoke test.
-      #    We'll map container's port 8000 to host's port 8000.
       - name: Run container in background
         run: |
           docker run -d --name test-container -p 8000:8000 crave-mvp-backend:ci-test
-          # Give it a few seconds to start up. Adjust as necessary.
           sleep 10
 
-      # 8. Smoke test the health endpoint. Adjust the path or port if needed.
       - name: Smoke test health endpoint
         run: |
-          set -e
           curl -f http://127.0.0.1:8000/api/health || exit 1
           echo "Health endpoint responded with 200 OK"
 
-      # 9. (Optional) Stop and remove the container after tests.
       - name: Cleanup test container
         if: always()
         run: |
           docker stop test-container
           docker rm test-container
 
-      # 10. (Optional) Push to a Docker registry if you want. E.g., Docker Hub or GitHub Packages.
-      #     For Docker Hub, set DOCKERHUB_USERNAME and DOCKERHUB_TOKEN as GitHub secrets.
-      # - name: Log in to Docker registry
-      #   run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-      #
-      # - name: Push Docker image
-      #   run: |
-      #     docker tag crave-mvp-backend:ci-test your-dockerhub-username/crave-mvp-backend:latest
-      #     docker push your-dockerhub-username/crave-mvp-backend:latest
-
-  # OPTIONAL: A separate job that deploys to Railway only after the above passes.
   deploy:
-    needs: [ test-and-build ]
+    needs: [test-and-build]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Only deploy from main branch
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -96,8 +68,6 @@ jobs:
           railway --version
 
       - name: Deploy to Railway
-        # You’ll need to set RAILWAY_TOKEN as a GitHub secret for auth:
-        # https://docs.railway.app/develop/cli#logging-in
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
