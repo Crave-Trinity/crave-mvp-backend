@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test-and-build:
@@ -54,9 +54,10 @@ jobs:
           docker rm test-container
 
   deploy:
-    needs: [test-and-build]
+    needs: test-and-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3
