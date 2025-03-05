@@ -3,34 +3,33 @@ fastapi==0.100.0
 uvicorn==0.23.0
 pydantic==2.10.6
 pydantic-settings==2.2.1
-SQLAlchemy>=2.0.0
-alembic>=1.12.0
+SQLAlchemy==2.0.17
+psycopg2-binary==2.9.10  
+alembic==1.11.1
 
-# OAuth and Security
+# Authentication and Security
+passlib[bcrypt]==1.7.4
+PyJWT==2.8.0
+email-validator>=2.0.0
+python-multipart==0.0.5
+python-jose[cryptography]==3.3.0
+
+# OAuth explicitly
 authlib==1.3.0
 httpx==0.26.0
 itsdangerous==2.1.2
-python-jose[cryptography]==3.3.0
-python-multipart==0.0.5
-passlib[bcrypt]==1.7.4
-
-# Data Validation and Settings
-pydantic==2.10.6
-pydantic-settings==2.2.1
-
-# Web Framework
-fastapi==0.100.0
-uvicorn==0.23.0
-
-# Database ORM
-SQLAlchemy==2.0.22
 
 # External integrations (CPU-only)
-pinecone==3.0.2
-protobuf==4.25.2
-grpcio==1.62.1
-googleapis-common-protos==1.63.0
+pinecone>=3.0.0
+protobuf>=4.21.0
+grpcio>=1.44.0
+googleapis-common-protos>=1.56.0
+openai>=1.2.0
+langchain>=0.1.0
+langchain-openai
 
-# Environment & Utilities
+# Utilities
+pytest==7.3.1
+requests==2.31.0
 python-dotenv==1.0.0
 psutil==5.9.5
