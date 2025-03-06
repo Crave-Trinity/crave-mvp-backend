@@ -1,5 +1,3 @@
-# railway.toml
-
 [environments.production]
 https_only = true
 

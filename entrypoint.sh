@@ -8,7 +8,6 @@
 # ------------------------------------------------------------------------------
 set -e
 
-# Detect Railway environment
 echo "==== RAILWAY ENV DETECT ===="
 if [[ -n "$RAILWAY_SERVICE_NAME" || -n "$RAILWAY_ENVIRONMENT_NAME" ]]; then
   echo "Railway detected! Service: ${RAILWAY_SERVICE_NAME:-unknown}, Env: ${RAILWAY_ENVIRONMENT_NAME:-unknown}"
@@ -17,7 +16,6 @@ else
 fi
 echo "==========================="
 
-# Print DB-related environment variables for debugging
 echo "==== DB ENV VARS ===="
 env | grep -i -E "sql|db|postgres|pg" | sort || echo "(none found)"
 echo "====================="

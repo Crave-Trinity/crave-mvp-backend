@@ -9,44 +9,35 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
-
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Lint code with flake8
         run: |
           pip install flake8
           flake8 --max-line-length=88 .
-
       - name: Run tests
         run: |
           pytest --maxfail=1 --disable-warnings -q
-
       - name: Build Docker image
         run: |
           docker build -t crave-mvp-backend:ci-test .
-
       - name: Run container in background
         run: |
           docker run -d --name test-container -p 8000:8000 crave-mvp-backend:ci-test
           sleep 10
-
       - name: Smoke test health endpoint
         run: |
           curl -f http://127.0.0.1:8000/api/health || exit 1
           echo "Health endpoint responded with 200 OK"
-
       - name: Cleanup test container
         if: always()
         run: |
@@ -57,17 +48,14 @@ jobs:
     needs: test-and-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
       - name: Install Railway CLI
         run: |
           curl -sSL https://railway.app/install.sh | sh
           echo "$HOME/.railway/bin" >> $GITHUB_PATH
           railway --version
-
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
