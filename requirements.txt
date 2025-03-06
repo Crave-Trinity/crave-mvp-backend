@@ -1,4 +1,5 @@
-# requirements.txt 
+# requirements.txt
+
 fastapi==0.100.0
 uvicorn==0.23.0
 pydantic==2.10.6
@@ -14,11 +15,15 @@ email-validator>=2.0.0
 python-multipart==0.0.5
 python-jose[cryptography]==3.3.0
 
-# OAuth explicitly
-authlib==1.3.0
+# Native iOS Google Sign-In uses google-auth, not authlib
+google-auth>=2.0.0
+
+# If you are NOT using server-side OAuth flows, remove authlib below:
+# authlib==1.3.0
+
+# HTTP + concurrency
 httpx==0.26.0
 itsdangerous==2.1.2
-google-auth=>2.0.0
 
 # External integrations (CPU-only)
 pinecone>=3.0.0
