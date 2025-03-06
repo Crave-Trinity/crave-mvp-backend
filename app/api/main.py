@@ -1,16 +1,16 @@
 """
 File: app/api/main.py
 Purpose:
-    - Defines the main FastAPI app.
-    - Registers routers for health, auth, etc.
-    - No hard-coded port usage here—entrypoint.sh handles that.
+  - Registers all FastAPI routers for your app.
+  - Health, email/password auth, Google OAuth, etc.
+  - See the docstrings for each route prefix.
 """
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import router modules
+# Routers
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.auth_endpoints import router as auth_router
 from app.api.endpoints.oauth_endpoints import router as oauth_router
@@ -29,54 +29,51 @@ from app.config.settings import settings
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version=\"1.0\",
-    description=\"CRAVE Trinity Backend. Email/Password + Google OAuth + Additional endpoints.\"
+    version="1.0",
+    description="CRAVE Trinity Backend: Email/Password + Google OAuth + more!"
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[\"*\"],
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=[\"*\"],
-    allow_headers=[\"*\"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 1) Health => GET /api/health
-app.include_router(health_router, prefix=\"/api/health\", tags=[\"Health\"])
+# 1) Health => /api/health
+app.include_router(health_router, prefix="/api/health", tags=["Health"])
 
-# 2) Email/Password Auth => /api/v1/auth
-app.include_router(auth_router, prefix=\"/api/v1/auth\", tags=[\"Authentication\"])
+# 2) Email/Password => /api/v1/auth
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 
 # 3) Google OAuth => /auth/oauth
-app.include_router(oauth_router, prefix=\"/auth/oauth\", tags=[\"OAuth\"])
+app.include_router(oauth_router, prefix="/auth/oauth", tags=["OAuth"])
 
 # 4) Admin => /admin
-app.include_router(admin_router, prefix=\"/admin\", tags=[\"Admin\"])
-app.include_router(admin_monitoring_router, prefix=\"/admin/monitoring\", tags=[\"AdminMonitoring\"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+app.include_router(admin_monitoring_router, prefix="/admin/monitoring", tags=["AdminMonitoring"])
 
 # 5) AI => /ai
-app.include_router(ai_router, prefix=\"/ai\", tags=[\"AI\"])
+app.include_router(ai_router, prefix="/ai", tags=["AI"])
 
 # 6) Analytics => /analytics
-app.include_router(analytics_router, prefix=\"/analytics\", tags=[\"Analytics\"])
+app.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 
 # 7) Cravings
-app.include_router(craving_logs_router, prefix=\"\", tags=[\"Cravings\"])
-app.include_router(live_updates_router, prefix=\"/live\", tags=[\"LiveUpdates\"])
-app.include_router(search_cravings_router, prefix=\"/search\", tags=[\"CravingsSearch\"])
-app.include_router(user_queries_router, prefix=\"/queries\", tags=[\"UserQueries\"])
+app.include_router(craving_logs_router, prefix="", tags=["Cravings"])   # e.g. POST /cravings
+app.include_router(live_updates_router, prefix="/live", tags=["LiveUpdates"])
+app.include_router(search_cravings_router, prefix="/search", tags=["CravingsSearch"])
+app.include_router(user_queries_router, prefix="/queries", tags=["UserQueries"])
 
-# 8) Voice Logs => /voice-logs, /voice-logs-enhancement
-app.include_router(voice_logs_endpoints_router, prefix=\"/voice-logs\", tags=[\"VoiceLogs\"])
-app.include_router(voice_logs_enhancement_router, prefix=\"/voice-logs-enhancement\", tags=[\"VoiceLogsEnhancement\"])
+# 8) Voice Logs
+app.include_router(voice_logs_endpoints_router, prefix="/voice-logs", tags=["VoiceLogs"])
+app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancement", tags=["VoiceLogsEnhancement"])
 
-@app.get(\"/\", tags=[\"Root\"])
+@app.get("/", tags=["Root"])
 def read_root():
-    return {\"message\": \"Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!\"}
+    return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
 
-
-# OPTIONAL: If you want local dev:
-# if __name__ == \"__main__\":
-#     # For local dev only, run uvicorn on port 8000
-#     # For production, rely on entrypoint.sh
-#     uvicorn.run(\"app.api.main:app\", host=\"0.0.0.0\", port=8000, reload=True)
+# Optionally for local dev only:
+# if __name__ == "__main__":
+#     uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
