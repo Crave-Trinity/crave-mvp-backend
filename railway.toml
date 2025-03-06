@@ -1,6 +1,5 @@
-# ==============================================
-# FILE: railway.toml
-# ==============================================
+# railway.toml
+
 [environments.production]
 https_only = true
 
@@ -9,12 +8,12 @@ builder = "dockerfile"
 
 [environments.production.deploy]
 startCommand = "./entrypoint.sh"
-healthcheckPath = "/api/health"
+healthcheckPath = "/api/health/"
 healthcheckTimeout = 10
 
 [deploy]
 numReplicas = 1
-healthcheckPath = "/api/health"
+healthcheckPath = "/api/health/"
 healthcheckTimeout = 10
 
 [build-system]

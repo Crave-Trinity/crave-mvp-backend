@@ -13,7 +13,7 @@
 # Root-level entry point for local development:
 #   $ python main.py
 #
-# To run in local dev, it just imports 'app' from app/api/main.py
+# To run in local dev, it just imports 'app' from app/api/
 # and serves with uvicorn on port 8000 with auto-reload.
 #
 
