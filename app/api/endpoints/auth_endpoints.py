@@ -1,6 +1,7 @@
 # File: app/api/endpoints/auth_endpoints.py
 # PURPOSE: Provides authentication endpoints for both email/password and native Google OAuth.
 #          For Google OAuth, it verifies the ID token and creates an OAuth user with an empty password hash.
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ from google.auth.transport import requests as google_requests
 
 from app.api.dependencies import get_db
 from app.config.settings import get_settings
-from app.infrastructure/database/repository import UserRepository
+from app.infrastructure.database.repository import UserRepository
 from app.infrastructure.auth.auth_service import AuthService
 
 router = APIRouter()
