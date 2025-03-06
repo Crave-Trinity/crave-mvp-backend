@@ -1,4 +1,26 @@
-# File: app/api/main.py
+################################################################################
+#                                                                              
+#  "I understand there's a guy inside me who wants to lay in bed,              
+#   smoke weed 🍃 all day, and watch cartoons and old movies.                     
+#   My whole life is a series of stratagems to avoid, and outwit, that guy."  
+#                                                                              
+#   - Anthony Bourdain                                                                                                                         
+#                                                                              
+################################################################################
+#
+#
+#
+#
+#
+
+import uvicorn
+from app.api.main import app
+
+if __name__ == "__main__":
+    # Start the FastAPI application on port 8000 with auto-reload
+    uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
+
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
