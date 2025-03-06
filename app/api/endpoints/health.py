@@ -1,16 +1,10 @@
-"""
-File: app/api/endpoints/health.py
-Purpose:
-  - Exposes a simple health check at GET /api/health.
-  - This endpoint is used by Railway to confirm your container is healthy.
-"""
 # app/api/endpoints/health.py
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(prefix="/api/health", tags=["Health"])
 
 @router.get("/", tags=["Health"])
 def health_check():
