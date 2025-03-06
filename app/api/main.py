@@ -1,11 +1,10 @@
-# app/api/main.py
-
+# File: app/api/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.auth_endpoints import router as auth_router
-from app.api.endpoints.oauth_endpoints import router as oauth_router
+# REMOVED: from app.api.endpoints.oauth_endpoints import router as oauth_router
 from app.api.endpoints.admin import router as admin_router
 from app.api.endpoints.admin_monitoring import router as admin_monitoring_router
 from app.api.endpoints.ai_endpoints import router as ai_router
@@ -15,8 +14,6 @@ from app.api.endpoints.search_cravings import router as search_cravings_router
 from app.api.endpoints.user_queries import router as user_queries_router
 from app.api.endpoints.voice_logs_endpoints import router as voice_logs_endpoints_router
 from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhancement_router
-
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -28,12 +25,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🔥 CRITICAL FIX: Register health router explicitly WITHOUT prefix (it's already set in health.py)
+# Include essential routers
 app.include_router(health_router)
-
-# Your other routers unchanged:
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(oauth_router, prefix="/auth/oauth", tags=["OAuth"])
+# REMOVED the old OAuth router
+# app.include_router(oauth_router, prefix="/auth/oauth", tags=["OAuth"])
+
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(admin_monitoring_router, prefix="/admin/monitoring", tags=["AdminMonitoring"])
 app.include_router(ai_router, prefix="/ai", tags=["AI"])
