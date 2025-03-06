@@ -12,18 +12,11 @@
 #
 #
 
-import uvicorn
-from app.api.main import app
-
-if __name__ == "__main__":
-    # Start the FastAPI application on port 8000 with auto-reload
-    uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
-
-
+# File: app/api/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import endpoints (ensure these modules exist and have __init__.py)
+# Import endpoints (ensure these modules exist and have __init__.py files)
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.auth_endpoints import router as auth_router
 from app.api.endpoints.admin import router as admin_router
@@ -38,7 +31,7 @@ from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhanc
 
 app = FastAPI()
 
-# Set up CORS middleware
+# Setup CORS middleware.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -47,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers with explicit prefixes
+# Include routers.
 app.include_router(health_router)  # Health endpoint: /api/health/
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
@@ -61,4 +54,4 @@ app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancemen
 
 @app.get("/", tags=["Root"])
 def read_root():
-    return {"message": "Welcome to CRAVE Trinity Backend."}
+    return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
