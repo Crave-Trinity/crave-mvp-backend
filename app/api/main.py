@@ -1,6 +1,8 @@
 # app/api/main.py
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.auth_endpoints import router as auth_router
 from app.api.endpoints.oauth_endpoints import router as oauth_router
@@ -14,7 +16,6 @@ from app.api.endpoints.user_queries import router as user_queries_router
 from app.api.endpoints.voice_logs_endpoints import router as voice_logs_endpoints_router
 from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhancement_router
 
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -27,10 +28,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount health router explicitly with trailing slash
-app.include_router(health_router, prefix="/api/health", tags=["Health"])
+# 🔥 CRITICAL FIX: Register health router explicitly WITHOUT prefix (it's already set in health.py)
+app.include_router(health_router)
 
-# Mount your other routers normally
+# Your other routers unchanged:
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(oauth_router, prefix="/auth/oauth", tags=["OAuth"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
@@ -42,10 +43,6 @@ app.include_router(user_queries_router, prefix="/queries", tags=["UserQueries"])
 app.include_router(voice_logs_endpoints_router, prefix="/voice-logs", tags=["VoiceLogs"])
 app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancement", tags=["VoiceLogsEnhancement"])
 
-# Root endpoint.
 @app.get("/", tags=["Root"])
 def read_root():
     return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
-
-# Explicitly mount the health router correctly
-app.include_router(health_router, prefix="/api/health", tags=["Health"])
