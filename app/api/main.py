@@ -2,8 +2,8 @@
 File: app/api/main.py
 Purpose:
     - Defines the main FastAPI app.
-    - Registers routers for health, auth, OAuth, admin, and other endpoints.
-    - Does not hard-code the port; the entrypoint.sh handles that.
+    - Registers routers for health, authentication, OAuth, admin, etc.
+    - Does not hard-code port settings; entrypoint.sh handles that.
 """
 
 from fastapi import FastAPI
@@ -26,14 +26,14 @@ from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhanc
 
 from app.config.settings import settings
 
-# Create FastAPI instance.
+# Create the FastAPI instance.
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0",
     description="CRAVE Trinity Backend. Email/Password + Google OAuth + Additional endpoints."
 )
 
-# Configure CORS to allow requests from any origin (adjust for production as needed).
+# Configure CORS to allow requests from any origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -46,13 +46,14 @@ app.add_middleware(
 # Register API routers with appropriate prefixes.
 # -------------------------------
 
-# Health check endpoint at GET /api/health.
+# Register the health router.
+# Mounting with prefix "/api/health" makes the final endpoint exactly /api/health.
 app.include_router(health_router, prefix="/api/health", tags=["Health"])
 
-# Email/Password Authentication under /api/v1/auth.
+# Authentication routes.
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 
-# Google OAuth endpoints under /auth/oauth.
+# Google OAuth endpoints.
 app.include_router(oauth_router, prefix="/auth/oauth", tags=["OAuth"])
 
 # Admin endpoints.
@@ -75,10 +76,9 @@ app.include_router(user_queries_router, prefix="/queries", tags=["UserQueries"])
 app.include_router(voice_logs_endpoints_router, prefix="/voice-logs", tags=["VoiceLogs"])
 app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancement", tags=["VoiceLogsEnhancement"])
 
-# Root endpoint for a simple welcome message.
+# Root endpoint.
 @app.get("/", tags=["Root"])
 def read_root():
     return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
 
-# Note: The 'if __name__ == "__main__"' block is commented out because production
-# startup is handled by the entrypoint.sh script and Uvicorn invocation.
+# Note: No duplicate or fallback /api/health endpoint is defined here.

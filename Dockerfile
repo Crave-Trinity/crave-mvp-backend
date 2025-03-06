@@ -1,15 +1,15 @@
 # Dockerfile
 # -------------------------------
-# Base image with Python 3.11 on a slim Debian-based image.
+# Base image using Python 3.11 slim.
 FROM python:3.11-slim
 
-# Ensure Python outputs everything to stdout/stderr immediately.
-ENV PYTHONUNBUFFERED=1s
+# Ensure unbuffered Python output.
+ENV PYTHONUNBUFFERED=1
 
-# Set the working directory inside the container.
+# Set working directory.
 WORKDIR /app
 
-# Install system-level dependencies.
+# Install system dependencies.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
     build-essential \
@@ -17,20 +17,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dos2unix \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file and install Python dependencies.
+# Copy requirements and install Python dependencies.
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire codebase into /app.
+# Copy entire codebase.
 COPY . /app/
 
-# Copy the entrypoint script, convert it to Unix format, and make it executable.
+# Copy the entrypoint script; convert to Unix line endings and make executable.
 COPY entrypoint.sh /app/entrypoint.sh
 RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Expose port 8000 (used locally) – Railway will override with its $PORT.
+# Expose port 8000 (Railway will override with its $PORT).
 EXPOSE 8000
 
-# Set the container's entrypoint to our custom script.
-# Using /bin/bash ensures the shell script runs properly.
+# Set the entrypoint to our custom script.
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]

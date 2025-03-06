@@ -1,11 +1,8 @@
-#====================================================
-# File: app/api/endpoints/health.py
-#====================================================
 """
-File: health.py
+File: app/api/endpoints/health.py
 Purpose:
-  - Exposes a simple health check at GET /api/health
-  - This is used by Railway to confirm your container is healthy.
+  - Exposes a simple health check at GET /api/health.
+  - This endpoint is used by Railway to confirm your container is healthy.
 """
 
 from fastapi import APIRouter
@@ -14,11 +11,10 @@ from datetime import datetime
 
 router = APIRouter()
 
-@router.get("/", tags=["Health"])
+# Define a single GET endpoint on the empty string.
+# When mounted with a prefix, this becomes exactly /api/health.
+@router.get("", tags=["Health"])
 def health_check():
-    """
-    GET /api/health -> returns 200 OK if healthy
-    """
     return JSONResponse(
         status_code=200,
         content={
@@ -29,10 +25,7 @@ def health_check():
         }
     )
 
-@router.head("/", tags=["Health"])
+# Also define the HEAD method for completeness.
+@router.head("", tags=["Health"])
 def health_check_head():
-    """
-    HEAD /api/health -> returns 200, no body
-    Some platforms do HEAD for health checks
-    """
     return JSONResponse(status_code=200, content=None)
