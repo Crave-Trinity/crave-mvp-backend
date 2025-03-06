@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = "20250306_add_oauth_columns_to_users"
+revision = "20250306_add_oauth_cols"
 down_revision = "20250305_add_craving_fields"
 branch_labels = None
 depends_on = None
