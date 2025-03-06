@@ -1,7 +1,7 @@
 """
 Add oauth_provider and picture columns to users table
 
-Revision ID: 20250306_add_oauth_columns_to_users
+Revision ID: 20250306_add_oauth_cols
 Revises: 20250305_add_craving_fields
 Create Date: 2025-03-06 11:00:00
 """
