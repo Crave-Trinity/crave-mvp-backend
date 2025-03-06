@@ -2,8 +2,10 @@
 File: main.py
 Purpose:
     - Defines the main FastAPI `app`.
-    - Registers our routers, specifying prefixes for each domain (auth, oauth, admin, etc.).
-    - Eliminates any duplicate prefix fiascos for swagger docs.
+    - Registers our routers for various domains (health, auth, etc.).
+    - Eliminates route prefix confusion for swagger docs.
+    - Ensures the health endpoint is registered at /api/health exactly,
+      matching Railway's health check path.
 """
 
 import uvicorn
@@ -27,12 +29,14 @@ from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhanc
 
 from app.config.settings import settings
 
+# Create our main FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0",
     description="CRAVE Trinity Backend. Email/Password + Google OAuth + Additional endpoints."
 )
 
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,41 +45,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health checks
+# 1) Health checks => /api/health
 app.include_router(health_router, prefix="/api/health", tags=["Health"])
 
-# Email/Password Auth: /api/v1/auth
+# 2) Email/Password Auth => /api/v1/auth
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 
-# Google OAuth: /auth/oauth
+# 3) Google OAuth => /auth/oauth
 app.include_router(oauth_router, prefix="/auth/oauth", tags=["OAuth"])
 
-# Admin
+# 4) Admin-related => /admin
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(admin_monitoring_router, prefix="/admin/monitoring", tags=["AdminMonitoring"])
 
-# AI
+# 5) AI => /ai
 app.include_router(ai_router, prefix="/ai", tags=["AI"])
 
-# Analytics
+# 6) Analytics => /analytics
 app.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 
-# Cravings
+# 7) Cravings
 app.include_router(craving_logs_router, prefix="", tags=["Cravings"])
 app.include_router(live_updates_router, prefix="/live", tags=["LiveUpdates"])
 app.include_router(search_cravings_router, prefix="/search", tags=["CravingsSearch"])
 app.include_router(user_queries_router, prefix="/queries", tags=["UserQueries"])
 
-# Voice Logs
+# 8) Voice Logs => /voice-logs, /voice-logs-enhancement
 app.include_router(voice_logs_endpoints_router, prefix="/voice-logs", tags=["VoiceLogs"])
 app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancement", tags=["VoiceLogsEnhancement"])
 
 @app.get("/", tags=["Root"])
 def read_root():
     """
-    Basic root endpoint, confirming the server is alive and stable.
+    Basic root endpoint to confirm server is alive and stable.
+    Usually returns a short JSON or HTML message.
     """
     return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
 
 if __name__ == "__main__":
+    # Run app on port 8000 if debugging locally. 
+    # On Railway, the container typically uses port 8080 by default, or environment variables.
     uvicorn.run("app.api.main:app", host="0.0.0.0", port=8000, reload=True)
