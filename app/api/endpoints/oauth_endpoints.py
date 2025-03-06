@@ -1,5 +1,5 @@
 """
-File: oauth_endpoints.py
+File: points.py
 Purpose:
   - Defines Google OAuth endpoints for initiating OAuth and handling callbacks.
   - The router is included in main.py with prefix="/auth/oauth".
