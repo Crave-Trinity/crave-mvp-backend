@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Import endpoints
+# Import endpoints (ensure these modules exist and have __init__.py)
 from app.api.endpoints.health import router as health_router
 from app.api.endpoints.auth_endpoints import router as auth_router
 from app.api.endpoints.admin import router as admin_router
@@ -17,7 +17,7 @@ from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhanc
 
 app = FastAPI()
 
-# Set up CORS middleware (adjust origins as needed)
+# Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,8 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers with appropriate prefixes
-app.include_router(health_router)  # Health endpoint will be /api/health/
+# Include routers with explicit prefixes
+app.include_router(health_router)  # Health endpoint: /api/health/
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(admin_monitoring_router, prefix="/admin/monitoring", tags=["AdminMonitoring"])
