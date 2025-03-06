@@ -30,7 +30,7 @@ from app.config.settings import settings
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0",
-    description="CRAVE Trinity Backend. Email/Password + Google OAuth + Additional endpoints."
+    description="CRAVE Trinity Backend..."
 )
 
 # Configure CORS to allow requests from any origin.
