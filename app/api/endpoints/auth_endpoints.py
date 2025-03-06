@@ -1,97 +1,48 @@
-#====================================================
-# File: app/api/endpoints/auth_endpoints.py
-#====================================================
+"""
+File: auth_endpoints.py
+Purpose:
+  - Exposes Authentication endpoints for email/password login, user registration if desired.
+  - The router is included in main.py with prefix="/api/v1/auth".
+  => This yields final paths: 
+     POST /api/v1/auth/login
+     GET /api/v1/auth/me
+     etc.
+"""
 
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
-from app.api.dependencies import get_db, get_user_repository, get_current_user
-from app.infrastructure.database.models import UserModel
-from app.infrastructure.auth.jwt_handler import create_access_token
-from app.infrastructure.auth.password_hasher import (
-    verify_password,
-    hash_password
-)
-from app.core.entities.auth_schemas import (
-    Token,
-    UserCreate,
-    UserResponse,
-    UserUpdate,
-    UserDBCreate,
-)
-from app.config.settings import get_settings
+from app.infrastructure.database.session import get_db
+from app.infrastructure.auth.user_manager import UserManager
+from app.infrastructure.database.repository import UserRepository
+from app.core.entities.auth_schemas import LoginRequest, AuthResponseDTO  # Adjust import paths as needed
 
 router = APIRouter()
 
-@router.post("/token", response_model=Token)
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(get_db),
-    user_repo=Depends(get_user_repository),
-):
-    user = (
-        user_repo.get_by_username(form_data.username)
-        or user_repo.get_by_email(form_data.username)
-    )
-    if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+@router.post("/login")
+async def login_user(
+    credentials: LoginRequest, 
+    db: Session = Depends(get_db)
+) -> AuthResponseDTO:
+    """
+    Email/password login endpoint.
+    Final route => POST /api/v1/auth/login
+    """
+    user_manager = UserManager(UserRepository(db))
+    user = await user_manager.authenticate_user(credentials.email, credentials.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access_token_expires = get_settings().JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-    access_token = create_access_token(
-        data={"sub": str(user.id)},
-        expires_delta=access_token_expires,
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Example: you might create a JWT or session
+    access_token = user_manager.create_access_token_for_user(user)
+    return AuthResponseDTO(accessToken=access_token)
 
-@router.post("/register", response_model=UserResponse)
-def register_user(
-    user: UserCreate,
-    db: Session = Depends(get_db),
-    user_repo=Depends(get_user_repository),
-):
-    existing_user_email = user_repo.get_by_email(user.email)
-    if existing_user_email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists.",
-        )
-
-    existing_user_username = user_repo.get_by_username(user.username)
-    if existing_user_username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this username already exists.",
-        )
-
-    hashed_password = hash_password(user.password)
-    db_user = UserDBCreate(
-        **user.model_dump(exclude={"password"}),
-        password_hash=hashed_password,
-    )
-    created_user = user_repo.create_user(
-        email=db_user.email,
-        username=db_user.username,
-        password_hash=db_user.password_hash,
-    )
-    return created_user
-
-@router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: UserModel = Depends(get_current_user)):
-    return current_user
-
-@router.put("/me", response_model=UserResponse)
-async def update_user(
-    user_update: UserUpdate,
-    current_user: UserModel = Depends(get_current_user),
-    user_repo=Depends(get_user_repository),
-):
-    for field, value in user_update.dict(exclude_unset=True).items():
-        setattr(current_user, field, value)
-    user_repo.update_user(current_user)
-    return current_user
+@router.get("/me")
+async def read_users_me(db: Session = Depends(get_db)):
+    """
+    Example for retrieving current user data 
+    (Requires some auth, e.g. a Bearer token).
+    => GET /api/v1/auth/me
+    """
+    return {"message": "Current user info placeholder."}

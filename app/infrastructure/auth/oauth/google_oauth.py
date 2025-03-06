@@ -1,8 +1,11 @@
-#app/infrastructure/auth/oauth/google_oauth.py
+"""
+File: google_oauth.py
+Handles the Google OAuth registration using Authlib's Starlette client.
+"""
+
 from authlib.integrations.starlette_client import OAuth
 from app.config.settings import settings
 
-# Single Responsibility: Handles Google OAuth configuration
 class GoogleOAuthProvider:
     def __init__(self):
         self.oauth = OAuth()
