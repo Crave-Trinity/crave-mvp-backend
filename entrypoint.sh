@@ -1,10 +1,7 @@
 #!/bin/bash
 # File: entrypoint.sh
 # ------------------------------------------------------------------------------
-# Purpose: Run Alembic migrations and start the FastAPI app.
-# This script ensures the DB schema is up-to-date by running:
-#   alembic upgrade head
-# before starting the app with Uvicorn.
+# Purpose: Run Alembic migrations and start the FastAPI app with Uvicorn.
 # ------------------------------------------------------------------------------
 set -e
 
@@ -28,10 +25,9 @@ echo "Using DATABASE_URL: ${DATABASE_URL:0:60}..."
 echo "Running Alembic migrations..."
 alembic upgrade head
 
-# Sleep to allow services to settle.
 echo "Sleeping 5 seconds to allow server startup..."
 sleep 5
 
-# Start FastAPI with Uvicorn.
+# Start FastAPI with Uvicorn, referencing app/api/main.py
 echo "Starting FastAPI with Uvicorn..."
 exec uvicorn app.api.main:app --host 0.0.0.0 --port "${PORT:-8000}"

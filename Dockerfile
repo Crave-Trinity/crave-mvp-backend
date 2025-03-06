@@ -19,15 +19,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire codebase.
+# Copy the entire codebase into /app.
 COPY . /app/
 
-# Copy entrypoint script; fix line endings and make it executable.
+# Convert line endings and make the entrypoint script executable.
 COPY entrypoint.sh /app/entrypoint.sh
 RUN dos2unix /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Expose port 8000 (Railway will override with $PORT).
+# Expose port 8000 (Railway will override $PORT).
 EXPOSE 8000
 
-# Set the entrypoint to our custom script.
+# Final command: run the entrypoint script.
 ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
