@@ -10,7 +10,7 @@
 #
 #
 #
-
+#
 
 import uvicorn
 from app.api.main import app
@@ -61,4 +61,4 @@ app.include_router(voice_logs_enhancement_router, prefix="/voice-logs-enhancemen
 
 @app.get("/", tags=["Root"])
 def read_root():
-    return {"message": "Welcome to CRAVE Trinity Backend. Healthy logging and analytics ahead!"}
+    return {"message": "Welcome to CRAVE Trinity Backend."}
