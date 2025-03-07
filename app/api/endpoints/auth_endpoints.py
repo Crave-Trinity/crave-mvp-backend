@@ -25,7 +25,6 @@ from app.config.settings import get_settings
 from app.infrastructure.database.repository import UserRepository
 from app.infrastructure.auth.auth_service import AuthService
 
-# Create FastAPI router and logger instance
 router = APIRouter()
 logger = get_logger(__name__)
 
@@ -37,12 +36,11 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
-
 @router.post("/login")
 def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     """
     1) Fetch user by email
-    2) Validate password_hash existence
+    2) Validate password_hash existence and verify password
     3) If valid, generate JWT
     4) Log success or invalid credentials
     """
@@ -52,16 +50,22 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         user = user_repo.get_by_email(payload.email)
 
         if not user or not user.password_hash:
-            logger.warning("Invalid login credentials", extra={"email": payload.email})
+            logger.warning("User not found or missing password", extra={"email": payload.email})
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials."
             )
 
-        # Generate JWT token upon success
+        # Placeholder password check; replace with secure password hashing verification
+        if user.password_hash != payload.password:
+            logger.warning("Incorrect password", extra={"email": payload.email})
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials."
+            )
+
         token = AuthService().generate_token(user_id=user.id, email=user.email)
         logger.info("User logged in successfully", extra={"user_id": user.id})
-
         return {"access_token": token, "token_type": "bearer"}
 
     except HTTPException as http_exc:
@@ -78,14 +82,12 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
             detail="Internal server error"
         )
 
-
 # -----------------------------------------------------
 # Google ID Token Verification
 # -----------------------------------------------------
 class GoogleVerifyRequest(BaseModel):
     """Request payload containing the Google ID token."""
     id_token: str
-
 
 @router.post("/verify-google-id-token")
 def verify_google_id_token(payload: GoogleVerifyRequest, db: Session = Depends(get_db)):
@@ -128,10 +130,8 @@ def verify_google_id_token(payload: GoogleVerifyRequest, db: Session = Depends(g
                 oauth_provider="google"
             )
 
-        # Generate local JWT token
         token = AuthService().generate_token(user_id=user.id, email=user.email)
         logger.info("Google verification succeeded", extra={"user_id": user.id})
-
         return {"access_token": token, "token_type": "bearer", "user_id": user.id}
 
     except ValueError as e:

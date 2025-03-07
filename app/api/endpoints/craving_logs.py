@@ -1,7 +1,6 @@
-# app/api/endpoints/craving_logs.py
 """
-File: craving_logs.py
-Description: Defines the API endpoints for handling cravings, 
+File: app/api/endpoints/craving_logs.py
+Description: Defines the API endpoints for handling cravings,
 including creation, listing, and retrieval, matching the front-end CravingEntity.
 """
 
@@ -18,7 +17,6 @@ from app.infrastructure.database.models import CravingModel
 
 router = APIRouter()
 
-
 # -------------------------------------------------------------------------
 # REQUEST/RESPONSE MODELS
 # -------------------------------------------------------------------------
@@ -33,7 +31,7 @@ class CreateCravingRequest(BaseModel):
     - emotions ([String])
     - timestamp (DateTime, ideally ISO8601)
     - isArchived (Bool)
-    user_id is also needed, but not in front-end model. 
+    user_id is also needed.
     """
     id: Optional[pyUUID] = Field(None, description="UUID from front end if available")
     user_id: int = Field(..., description="User ID logging the craving")
@@ -67,7 +65,11 @@ class CravingListResponse(BaseModel):
     count: int
 
 
-@router.post("/cravings", response_model=CravingResponse, tags=["Cravings"])
+# -------------------------------------------------------------------------
+# ENDPOINTS (Corrected Routes)
+# -------------------------------------------------------------------------
+
+@router.post("/", response_model=CravingResponse, tags=["Cravings"])
 async def create_craving(
     request: CreateCravingRequest,
     db: Session = Depends(get_db)
@@ -77,10 +79,8 @@ async def create_craving(
     """
     try:
         repo = CravingRepository(db)
-
         # If the front end provided an ID, use that. Otherwise, generate server-side.
         craving_uuid = request.id or pyUUID(hex="".join(str(datetime.utcnow().timestamp()).split(".")))
-
         new_craving = CravingModel(
             craving_uuid=craving_uuid,
             user_id=request.user_id,
@@ -95,7 +95,6 @@ async def create_craving(
         db.add(new_craving)
         db.commit()
         db.refresh(new_craving)
-
         return CravingResponse(
             id=new_craving.craving_uuid,
             user_id=new_craving.user_id,
@@ -111,7 +110,7 @@ async def create_craving(
         raise HTTPException(status_code=500, detail=f"Failed to create craving: {str(e)}")
 
 
-@router.get("/cravings/{craving_uuid}", response_model=CravingResponse, tags=["Cravings"])
+@router.get("/{craving_uuid}", response_model=CravingResponse, tags=["Cravings"])
 async def get_craving(
     craving_uuid: pyUUID = Path(..., description="The UUID of the craving to retrieve"),
     db: Session = Depends(get_db)
@@ -125,10 +124,8 @@ async def get_craving(
             CravingModel.craving_uuid == craving_uuid,
             CravingModel.is_deleted == False
         ).first()
-
         if not craving:
             raise HTTPException(status_code=404, detail=f"Craving with UUID {craving_uuid} not found")
-
         return CravingResponse(
             id=craving.craving_uuid,
             user_id=craving.user_id,
@@ -139,14 +136,13 @@ async def get_craving(
             timestamp=craving.timestamp,
             isArchived=craving.is_archived
         )
-
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/cravings", response_model=CravingListResponse, tags=["Cravings"])
+@router.get("/", response_model=CravingListResponse, tags=["Cravings"])
 async def list_cravings(
     user_id: int = Query(..., description="Filter by user ID"),
     skip: int = Query(0, ge=0),
@@ -164,7 +160,6 @@ async def list_cravings(
         )
         cravings = query.offset(skip).limit(limit).all()
         count = query.count()
-
         craving_responses = []
         for c in cravings:
             craving_responses.append(
@@ -179,8 +174,6 @@ async def list_cravings(
                     isArchived=c.is_archived
                 )
             )
-
         return CravingListResponse(cravings=craving_responses, count=count)
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list cravings: {str(e)}")
