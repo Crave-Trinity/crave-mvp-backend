@@ -4,6 +4,7 @@ Description: Defines the API endpoints for handling cravings,
 including creation, listing, and retrieval, matching the front-end CravingEntity.
 """
 
+import uuid
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID as pyUUID
@@ -42,7 +43,6 @@ class CreateCravingRequest(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     isArchived: bool = False
 
-
 class CravingResponse(BaseModel):
     """
     Response model that maps exactly to front-end's CravingEntity.
@@ -56,14 +56,12 @@ class CravingResponse(BaseModel):
     timestamp: datetime
     isArchived: bool
 
-
 class CravingListResponse(BaseModel):
     """
     Response model for listing cravings.
     """
     cravings: List[CravingResponse]
     count: int
-
 
 # -------------------------------------------------------------------------
 # ENDPOINTS (Corrected Routes)
@@ -79,8 +77,8 @@ async def create_craving(
     """
     try:
         repo = CravingRepository(db)
-        # If the front end provided an ID, use that. Otherwise, generate server-side.
-        craving_uuid = request.id or pyUUID(hex="".join(str(datetime.utcnow().timestamp()).split(".")))
+        # Use a valid UUID if not provided
+        craving_uuid = request.id or uuid.uuid4()
         new_craving = CravingModel(
             craving_uuid=craving_uuid,
             user_id=request.user_id,
@@ -108,7 +106,6 @@ async def create_craving(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to create craving: {str(e)}")
-
 
 @router.get("/{craving_uuid}", response_model=CravingResponse, tags=["Cravings"])
 async def get_craving(
@@ -141,7 +138,6 @@ async def get_craving(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.get("/", response_model=CravingListResponse, tags=["Cravings"])
 async def list_cravings(
     user_id: int = Query(..., description="Filter by user ID"),
@@ -160,20 +156,19 @@ async def list_cravings(
         )
         cravings = query.offset(skip).limit(limit).all()
         count = query.count()
-        craving_responses = []
-        for c in cravings:
-            craving_responses.append(
-                CravingResponse(
-                    id=c.craving_uuid,
-                    user_id=c.user_id,
-                    cravingDescription=c.description,
-                    cravingStrength=c.intensity,
-                    confidenceToResist=c.confidence_to_resist or 0.0,
-                    emotions=c.emotions or [],
-                    timestamp=c.timestamp,
-                    isArchived=c.is_archived
-                )
+        craving_responses = [
+            CravingResponse(
+                id=c.craving_uuid,
+                user_id=c.user_id,
+                cravingDescription=c.description,
+                cravingStrength=c.intensity,
+                confidenceToResist=c.confidence_to_resist or 0.0,
+                emotions=c.emotions or [],
+                timestamp=c.timestamp,
+                isArchived=c.is_archived
             )
+            for c in cravings
+        ]
         return CravingListResponse(cravings=craving_responses, count=count)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list cravings: {str(e)}")

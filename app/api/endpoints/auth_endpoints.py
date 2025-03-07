@@ -56,7 +56,7 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
                 detail="Invalid credentials."
             )
 
-        # Placeholder password check; replace with secure password hashing verification
+        # Placeholder password check; for now, simply compare plaintext
         if user.password_hash != payload.password:
             logger.warning("Incorrect password", extra={"email": payload.email})
             raise HTTPException(

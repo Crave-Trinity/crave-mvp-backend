@@ -17,18 +17,18 @@ echo "==== DB ENV VARS ===="
 env | grep -i -E "sql|db|postgres|pg" | sort || echo "(none found)"
 echo "==========================="
 
-# Provide a default DATABASE_URL if not set.
-export DATABASE_URL="${DATABASE_URL:-postgresql://postgres:password@db:5432/crave_db}"
+# -- Remove the old fallback to "db" and require DATABASE_URL instead:
+if [ -z "$DATABASE_URL" ]; then
+  echo "ERROR: DATABASE_URL is not set. Exiting..."
+  exit 1
+fi
 echo "Using DATABASE_URL: ${DATABASE_URL:0:60}..."
 
-# Run Alembic migrations to update the database schema.
 echo "Running Alembic migrations..."
 alembic upgrade head
 
-# Sleep briefly to allow services to settle.
 echo "Sleeping 5 seconds to allow server startup..."
 sleep 5
 
-# Start FastAPI using Uvicorn.
 echo "Starting FastAPI with Uvicorn..."
 exec uvicorn app.api.main:app --host 0.0.0.0 --port "${PORT:-8000}"
