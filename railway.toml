@@ -11,7 +11,7 @@ healthcheckTimeout = 30
 
 [deploy]
 numReplicas = 1
-healthcheckPath = "/api/health/"
+healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 
 [build-system]
