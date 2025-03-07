@@ -24,15 +24,7 @@ router = APIRouter()
 
 class CreateCravingRequest(BaseModel):
     """
-    Matches front-end's CravingEntity:
-    - id (UUID)
-    - cravingDescription (String)
-    - cravingStrength (Double)
-    - confidenceToResist (Double)
-    - emotions ([String])
-    - timestamp (DateTime, ideally ISO8601)
-    - isArchived (Bool)
-    user_id is also needed.
+    Matches front-end's CravingEntity.
     """
     id: Optional[pyUUID] = Field(None, description="UUID from front end if available")
     user_id: int = Field(..., description="User ID logging the craving")
@@ -64,16 +56,16 @@ class CravingListResponse(BaseModel):
     count: int
 
 # -------------------------------------------------------------------------
-# ENDPOINTS (Corrected Routes)
+# ENDPOINTS (Routes defined without trailing slashes)
 # -------------------------------------------------------------------------
 
-@router.post("/", response_model=CravingResponse, tags=["Cravings"])
+@router.post("", response_model=CravingResponse, tags=["Cravings"])
 async def create_craving(
     request: CreateCravingRequest,
     db: Session = Depends(get_db)
 ):
     """
-    Create a new craving entry that aligns with the front end's CravingEntity.
+    Create a new craving entry.
     """
     try:
         repo = CravingRepository(db)
@@ -138,7 +130,7 @@ async def get_craving(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=CravingListResponse, tags=["Cravings"])
+@router.get("", response_model=CravingListResponse, tags=["Cravings"])
 async def list_cravings(
     user_id: int = Query(..., description="Filter by user ID"),
     skip: int = Query(0, ge=0),

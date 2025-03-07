@@ -1,11 +1,6 @@
 """
 File: app/api/endpoints/search_cravings.py
-
 This module implements the search endpoint for the CRAVE Trinity Backend.
-It exposes a GET route at /search (mounted with prefix '/search') which:
- • Accepts query parameters: user_id and query text.
- • Uses the CravingRepository to search for matching cravings.
- • Converts the ORM objects into Pydantic models for a consistent response.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -32,7 +27,7 @@ class SearchResponse(BaseModel):
 
 router = APIRouter()
 
-@router.get("/", response_model=SearchResponse, tags=["Cravings"])
+@router.get("", response_model=SearchResponse, tags=["Cravings"])
 def search_cravings_endpoint(
     user_id: int = Query(..., description="User ID for search context"),
     query: str = Query(..., description="Search query text"),

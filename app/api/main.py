@@ -21,7 +21,8 @@ from app.api.endpoints.voice_logs_enhancement import router as voice_logs_enhanc
 
 logger = get_logger("main")
 
-app = FastAPI()
+# Disable automatic redirect for trailing slashes for canonical URLs.
+app = FastAPI(redirect_slashes=False)
 
 # ----------------------------------------
 # CORS Setup
@@ -37,7 +38,7 @@ app.add_middleware(
 # ----------------------------------------
 # Include Routers
 # ----------------------------------------
-app.include_router(health_router)  # /api/health
+app.include_router(health_router)  # Mounted with prefix already set in health.py (/api/health)
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 app.include_router(admin_monitoring_router, prefix="/admin/monitoring", tags=["AdminMonitoring"])

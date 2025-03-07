@@ -1,7 +1,6 @@
 #====================================================
 # File: app/api/endpoints/voice_logs_endpoints.py
 #====================================================
-
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status
@@ -28,11 +27,10 @@ def get_db():
         db.close()
 
 def get_voice_logs_service(db: Session = Depends(get_db)) -> VoiceLogsService:
-    # CHANGED: Create the repo with VoiceLogRepository (no "s")
     repo = VoiceLogRepository(db)
     return VoiceLogsService(repo)
 
-@router.post("/", response_model=VoiceLogOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=VoiceLogOut, status_code=status.HTTP_201_CREATED)
 async def create_voice_log(
     file: UploadFile = File(...),
     payload: VoiceLogCreate = Depends(),
@@ -84,14 +82,13 @@ def get_transcript(
     voice_log = repo.get_by_id(voice_log_id)
     if not voice_log or voice_log.is_deleted or voice_log.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Voice log not found or inaccessible.")
-
     return {
         "voice_log_id": voice_log.id,
         "transcribed_text": voice_log.transcribed_text,
         "transcription_status": voice_log.transcription_status
     }
 
-@router.get("/", response_model=list[VoiceLogOut])
+@router.get("", response_model=list[VoiceLogOut])
 def list_voice_logs(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(AuthService().get_current_user),
@@ -110,7 +107,6 @@ def delete_voice_log(
     voice_log = repo.get_by_id(voice_log_id)
     if not voice_log or voice_log.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Voice log not found or inaccessible.")
-
     success = repo.soft_delete(voice_log_id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to delete voice log.")
