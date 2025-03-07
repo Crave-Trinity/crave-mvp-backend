@@ -7,7 +7,7 @@ import os
 from app.config.settings import get_settings
 
 print("=== DATABASE ENV VARS ===")
-for key in sorted(os.aenviron.keys()):
+for key in sorted(os.environ.keys()):
     if any(db_term in key.lower() for db_term in ["postgres", "pg", "sql", "db"]):
         value = os.environ[key]
         if "password" in key.lower():
