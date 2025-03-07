@@ -1,4 +1,5 @@
-# tests/integration/test_ai_endpoints.py
+# File: tests/integration/test_ai_endpoints.py
+
 import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
@@ -7,8 +8,11 @@ from app.api.main import app
 client = TestClient(app)
 
 @pytest.mark.integration
-@patch("app.core.services.rag_service.generate_personalized_insight")
+@patch("app.core.services.rag_service.RAGService.generate_personalized_insight")
 def test_insights_endpoint(mock_rag):
+    """
+    Tests the AI insights endpoint with a patched RAGService method.
+    """
     mock_rag.return_value = "Mocked response about cravings."
 
     payload = {
