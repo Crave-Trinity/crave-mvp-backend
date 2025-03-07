@@ -1,5 +1,4 @@
 # app/api/endpoints/ai_endpoints.py
-# app/api/endpoints/ai_endpoints.py
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 import openai
