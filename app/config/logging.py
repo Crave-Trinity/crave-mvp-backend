@@ -18,7 +18,7 @@ SENTRY_ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 # Set a release version; increment this manually with significant revisions.
 SENTRY_RELEASE = os.getenv("SENTRY_RELEASE", "crave_backend@1.0")
 # Optionally enable performance tracing by setting a sample rate (0.0 to disable)
-SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.0"))
+SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "1.0"))
 
 def configure_logging() -> None:
     """
