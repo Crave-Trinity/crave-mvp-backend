@@ -8,7 +8,7 @@ database connections, data repositories, and authenticated user information.
 
 import os
 from typing import Generator
-from sqlalchemy import create_engine, exc, text  # text() is used for SQLAlchemy 2.0+ compatibility
+from sqlalchemy import create_engine, exc, text  # Use text() for SQLAlchemy 2.0+ compatibility
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -17,8 +17,10 @@ from jose import JWTError, jwt
 from app.infrastructure.database.repository import (
     CravingRepository,
     UserRepository,
-    VoiceLogRepository,
 )
+# <-- Fix: Import VoiceLogRepository from the correct module:
+from app.infrastructure.database.voice_logs_repository import VoiceLogRepository
+
 from app.infrastructure.database.models import UserModel
 from app.config.settings import settings  # Global settings configuration
 
@@ -69,12 +71,6 @@ def get_db() -> Generator[Session, None, None]:
 def get_craving_repository(db: Session = Depends(get_db)) -> CravingRepository:
     """
     FastAPI dependency that provides a CravingRepository instance using the current session.
-    
-    Args:
-        db: The current SQLAlchemy session.
-        
-    Returns:
-        CravingRepository: An instance to perform craving-related database operations.
     """
     return CravingRepository(db)
 
@@ -82,12 +78,6 @@ def get_craving_repository(db: Session = Depends(get_db)) -> CravingRepository:
 def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
     """
     FastAPI dependency that provides a UserRepository instance using the current session.
-    
-    Args:
-        db: The current SQLAlchemy session.
-        
-    Returns:
-        UserRepository: An instance to perform user-related database operations.
     """
     return UserRepository(db)
 
@@ -95,12 +85,6 @@ def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
 def get_voice_log_repository(db: Session = Depends(get_db)) -> VoiceLogRepository:
     """
     FastAPI dependency that provides a VoiceLogRepository instance using the current session.
-    
-    Args:
-        db: The current SQLAlchemy session.
-        
-    Returns:
-        VoiceLogRepository: An instance to perform voice log operations.
     """
     return VoiceLogRepository(db)
 
@@ -118,21 +102,9 @@ async def get_current_user(
     """
     FastAPI dependency that retrieves the current authenticated user from the JWT token.
     
-    The function decodes the token using settings.JWT_SECRET and settings.JWT_ALGORITHM.
-    It attempts to find the user first by username (extracted from the "sub" claim) and,
-    if not found, by email. It raises an HTTPException if the token is invalid or the user
-    is not found or inactive.
-    
-    Args:
-        request: The incoming HTTP request.
-        db: The current SQLAlchemy session.
-        token: The JWT token from the Authorization header.
-        
-    Returns:
-        UserModel: The authenticated user.
-        
-    Raises:
-        HTTPException: For invalid tokens, not found users, or inactive users.
+    It decodes the token using settings.JWT_SECRET and settings.JWT_ALGORITHM,
+    and attempts to find the user by username (from the "sub" claim), falling back to email.
+    Raises an HTTPException if the token is invalid or the user is not found/inactive.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -140,9 +112,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(
-            token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         subject: str = payload.get("sub")
         if subject is None:
             raise credentials_exception
