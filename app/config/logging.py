@@ -3,23 +3,25 @@ import logging
 import os
 from pythonjsonlogger import jsonlogger
 from logging.handlers import RotatingFileHandler
-
-# -- Sentry imports --
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
 
-# -- Environment-driven config --
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOG_FILE_PATH = os.getenv("LOG_FILE_PATH", "logs/crave_trinity_backend.log")
-SENTRY_DSN = os.getenv("SENTRY_DSN", "")  # Provide a DSN in your environment or leave blank
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 
 def configure_logging() -> None:
     """
-    Configure JSON-structured logging, rotating file logs, console output,
-    and optional Sentry error reporting (if SENTRY_DSN is provided).
+    Configure JSON logging, rotating file logs, console output,
+    and optional Sentry error reporting (if SENTRY_DSN is set).
     """
 
-    # 1) Console handler (stdout)
+    # 1) Make sure the logs/ directory exists
+    log_dir = os.path.dirname(LOG_FILE_PATH)
+    if log_dir:  # If there's a directory part
+        os.makedirs(log_dir, exist_ok=True)
+
+    # 2) Console handler
     console_handler = logging.StreamHandler()
     console_formatter = jsonlogger.JsonFormatter(
         fmt='%(asctime)s %(name)s %(levelname)s %(message)s'
@@ -27,10 +29,10 @@ def configure_logging() -> None:
     console_handler.setFormatter(console_formatter)
     console_handler.setLevel(LOG_LEVEL)
 
-    # 2) Rotating file handler
+    # 3) Rotating file handler
     file_handler = RotatingFileHandler(
         LOG_FILE_PATH,
-        maxBytes=5 * 1024 * 1024,  # ~5MB per file
+        maxBytes=5 * 1024 * 1024,  # 5MB
         backupCount=5
     )
     file_formatter = jsonlogger.JsonFormatter(
@@ -39,21 +41,21 @@ def configure_logging() -> None:
     file_handler.setFormatter(file_formatter)
     file_handler.setLevel(LOG_LEVEL)
 
-    # 3) Configure Python's built-in logging
+    # 4) Basic logging config
     logging.basicConfig(
         level=LOG_LEVEL,
         handlers=[console_handler, file_handler]
     )
 
-    # 4) Optional: Initialize Sentry (only if SENTRY_DSN is set)
+    # 5) Sentry integration (optional)
     if SENTRY_DSN:
         sentry_logging = LoggingIntegration(
-            level=logging.INFO,         # Capture INFO as breadcrumbs
-            event_level=logging.ERROR   # Send errors as Sentry events
+            level=logging.INFO,      # capture INFO+ as breadcrumbs
+            event_level=logging.ERROR  # send ERROR+ as events
         )
         sentry_sdk.init(
             dsn=SENTRY_DSN,
             integrations=[sentry_logging],
-            send_default_pii=True,      # Captures user IP & headers (optional)
+            send_default_pii=True
         )
-        logging.getLogger(__name__).info("Sentry SDK initialized with DSN.")
+        logging.getLogger(__name__).info("Sentry SDK initialized.")
